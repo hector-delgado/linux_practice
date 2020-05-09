@@ -1,0 +1,82 @@
+Basic Command Syntax
+
+command [options…] [arguments…]
+
+Quoting
+Double quotes will prevent the shell from interpreting some of these special characters; single quotes prevent the shell from interpreting any special characters.
+Using double quotes preserves the literal value of all characters that they enclose except metacharacters such as the $ dollar sign character, the ` backquote character, the \ backslash character and the ! exclamation point character. These characters, called wild cards, are symbol characters that have special meaning to the shell. Wild card characters are used for globbing and are interpreted by the shell itself before it attempts to run any command. Glob characters are useful because they allow you to specify patterns that make it easier to match file names in the command line. For example, the command ls e?? would list all files in that directory that start with an e and have any two characters after it. However, because glob characters are interpreted differently by the shell, they need to be enclosed appropriately to be interpreted literally.
+
+Options
+ls -l -a -r
+ls -rla
+ls -a -lr
+
+Generally, short options can be combined with other short options in any order. The exception to this is when an option requires an argument.
+ls -rtw 40
+ls -lr -w 40
+ls -w 40 -T 12
+
+Commands that support long options will often also support arguments that may be specified with or without an equal symbol (the output of both commands is the same):
+ls --sort time
+ls --sort=time
+
+For example, if the touch command tries to create a file called --badname
+touch -- --badname
+
+A third type of option exists for a select few commands. While the options used in the AT&T version of UNIX used a single hyphen and the GNU port of those commands used two hyphens, the Berkeley Software Distribution (BSD) version of UNIX used options with no hyphen at all.
+
+This no hyphen syntax is fairly rare in most Linux distributions. A couple of notable commands that support the BSD UNIX style options are the ps and tar commands; both of these commands also support the single and double hyphen style of options.
+
+In the terminal below, there are two similar commands, the first command is executed with a traditional UNIX style option (with single hyphens) and the second command is executed with a BSD style option (no hyphens).
+ps -u sysadmin
+ps u
+
+Scripts
+A common use of the exec command is in what is known as wrapper scripts. If the purpose of a script is to simply configure and launch another program, then it is known as a wrapper script.
+exec program
+
+Displaying System Information
+The uname command is useful for several reasons, including when you need to determine the name of the computer as well as the current version of the kernel that is being used.
+
+To display additional information about the system, you can use one of the many options available for the uname command. For example, to display all the information about the system, use the -a option with the uname command:
+uname -a
+uname -r
+
+Command Information
+type command
+
+type ip
+
+The /bin directory contains executable programs needed for booting a system, commonly used commands, and other programs needed for basic system functionality.
+
+The /sbin directory also contains executable programs; mainly commands and tools designed for system administration.
+
+The which command searches for the location of a command in the system by searching the PATH variable.
+The PATH variable contains a list of directories that are used to search for commands entered by the user.
+
+Man Pages
+man ls
+
+By default, there are nine sections of man pages:
+
+Executable programs or shell commands
+System calls (functions provided by the kernel)
+Library calls (functions within program libraries)
+Special files (usually found in /dev)
+File formats and conventions, e.g. /etc/passwd
+Games
+Miscellaneous (including macro packages and conventions), e.g. man(7), groff(7)
+System administration commands (usually only for root)
+Kernel routines [non-standard]
+
+You can find the same command or file in different sections if you want to change the section use the number of the section as an argument
+man passwd
+man 5 passwd 
+
+The -f option to the man command will display man pages that match, or partially match, a specific name and provide a brief description of each man page:
+Note that on most Linux distributions, the whatis command does the same thing as man -f. On those distributions, both will produce the same output.
+
+Unfortunately, you won't always remember the exact name of the man page that you want to view. In these cases, you can search for man pages that match a keyword by using the -k option to the man command.
+
+For example, what if you knew you wanted a man page that displays how to change your password, but you didn't remember the exact name? You could run the command man -k password:
+the apropos command does the same thing as man -k

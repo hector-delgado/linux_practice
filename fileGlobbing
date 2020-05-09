@@ -1,0 +1,31 @@
+4.1 Introduction
+For the details of how globbing works, you can view the man page on glob in section 7 of the manual pages by executing:
+
+sysadmin@localhost:~$ man 7 glob
+
+4.2 Asterisk * Character
+The asterisk* wildcard can be used to match any string, including the empty string.
+
+sysadmin@localhost:~$ echo *
+
+echo D*n*
+
+4.3 Question Mark ? Character
+The question mark ? character in a string will match exactly one character.
+
+sysadmin@localhost:/usr/bin$ echo ??
+‌⁠​​⁠​ du ex hd id nl od pg pr sg tr ul vi wc xz
+sysadmin@localhost:/usr/bin$ echo ???
+a2p apt awk cal cmp col cut dig env eqn
+
+echo w??*
+
+4.4 Brackets [ ] Characters
+By using the square bracket [ ] characters, a set of characters can be enclosed that will be used to match exactly one character. You can think of the square brackets as being like a question mark ? wildcard, but limited to the characters that are listed inside of the square brackets.
+
+For example, using a pattern like [abcd]?? will match file names that start with an a, b, c, or d character and that are three characters long. Alternatively, letters that are consecutive can also be expressed as a range like the [a-d]?? pattern:
+
+sysadmin@localhost:/usr/bin$ echo [a-d]??
+a2p apt awk cal cmp col cut dig
+
+echo [!a-v]*

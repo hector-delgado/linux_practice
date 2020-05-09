@@ -1,0 +1,5 @@
+alias name="command"
+alias cdu="cd .."
+alias mycal=cal 2020
+gedit ~/.bashr Para hacer persistente un alias ponerlo aqui
+unalias aliasName

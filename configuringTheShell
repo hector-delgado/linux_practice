@@ -1,0 +1,171 @@
+Shell Variables
+
+name="Bob Smith"
+echo $name
+
+_nameofvar
+VAR_NAME
+nameVar
+
+Local and Environment Variables
+A local variable is only available to the shell in which it was created. An environment variable is available to the shell in which it was created, and it is passed into all other commands/programs started by the shell.
+
+To set the value of a variable, use the following assignment expression. If the variable already exists, the value of the variable is modified. If the variable name does not already exist, the shell creates a new local variable and sets the value:
+variable=value
+
+An environment variable can be created directly by using the export command.
+export JOB=engineer
+
+existing local variable can be exported with the export command.
+export variable
+
+Third, the declare or typeset command can be used with the export -x option to declare a variable to be an environment variable. These commands are synonymous and work the same way:
+
+sysadmin@localhost:~$ declare -x EDUCATION=masters                                                                                               	 
+sysadmin@localhost:~$ echo $EDUCATION
+masters                                                                    	 
+sysadmin@localhost:~$ typeset -x EDUCATION=masters                    	 
+sysadmin@localhost:~$ echo $EDUCATION
+masters
+
+The env command is used to run commands in a modified environment. It can also be used to temporarily create or change environment variables that are only passed to a single command execution by using the following syntax:
+
+env [NAME=VALUE] [COMMAND]
+
+env TZ=EST date
+
+date
+
+Displaying Variables
+There are several ways to display the values of variables. The set command by itself will display all variables (local and environment) Here, we will pipe the output to the tail command so we can see some of the variables that were set in the previous section:
+set | tail
+
+To display only environment variables, you can use several commands that provide nearly the same output:
+
+env
+declare -x
+typeset -x
+export -p
+
+To display var value:
+echo $PATH
+echo ${PATH} command would produce the same result as the echo $PATH command, the curly braces set the variable apart visually, making it easier to see in scripts in some contexts.
+
+Unsetting Variables
+If you create a variable and then no longer want that variable to be defined, use the unset command to delete it:
+
+unset VARIABLE
+
+
+PATH Variable
+The PATH variable contains a list of directories that are used to search for commands entered by the user. When the user types a command and then presses the Enter key, the PATH directories are searched for an executable file that matches the command name. Processing works through the list of directories from left to right; the first executable file that matches what is typed is the command the shell will try to execute.
+
+
+
+
+Directory	Contents
+/home/sysadmin/bin	A directory for the current user sysadmin to place programs. Typically used by users who create their own scripts.
+
+/usr/local/sbin	Normally empty, but may have administrative commands that have been compiled from local sources.
+
+/usr/local/bin	Normally empty, but may have commands that have been compiled from local sources.
+
+/usr/sbin	Contains the majority of the administrative command files.
+
+/usr/bin	Contains the majority of the commands that are available for regular users to execute.
+
+/sbin	Contains the essential administrative commands.
+
+/bin	Contains the most fundamental commands that are essential for the operating system to function.
+
+Add path to PATH var
+PATH=$PATH:/home/sysadmin
+sysadmin@localhost:~$ echo $PATH
+/home/sysadmin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/sysadmin
+
+It is not recommended becasuse can cause maliceous software to gain top level access.
+Initialization Files
+When a user opens a new shell, either during login or when they run a terminal that starts a shell, the shell is customized by files called initialization (or configuration) files. These initialization files set the value of variables, create aliases and functions, and execute other commands that are useful in starting the shell.
+
+There are two types of initialization files: global initialization files that affect all users on the system and local initialization files that are specific to an individual user.
+
+The global configuration files are located in the /etc directory. Local configuration files are stored in the user's home directory.
+
+‌⁠​​⁠​ When Bash is started as a login shell, the /etc/profile file is executed first. This file typically executes all files ending in .sh that are found in the /etc/profile.d directory.
+
+The next file that is executed is usually ~/.bash_profile (but some users may use ~/.bash_login or ~/.profile file). The ~/.bash_profile file typically also executes the ~/.bashrc file which in turn executes the /etc/bashrc file.
+
+Consider This
+
+Since the ~/.bash_profile file is under the control of the user, the execution of the ~/.bashrc and /etc/bashrc files are also controllable by the user.
+
+When Bash is started as an interactive shell, it executes the ~/.bashrc file, which may also execute the /etc/bashrc file, if it exists. Again, since the ~/.bashrc file is owned by the user who is logging in, the user can prevent execution of the /etc/bashrc file.
+
+With so many initialization files, a common question at this point is "what file am I supposed to use?" The following chart illustrates the purpose of each of these files, providing examples of what commands you might place in each file:
+
+File	Purpose
+/etc/profile	This file can only be modified by the administrator and will be executed by every user who logs in. Administrators use this file to create key environment variables, display messages to users as they log in, and set key system values.
+~/.bash_profile ~/.bash_login ~/.profile	Each user has their own .bash_profile file in their home directory. The purpose of this file is the same as the /etc/profile file, but having this file allows a user to customize the shell to their own tastes. This file is typically used to create customized environment variables.
+~/.bashrc	Each user has their own .bashrc file in their home directory. The purpose of this file is to generate items that need to be created for each shell, such as local variables and aliases.
+/etc/bashrc	This file may affect every user on the system. Only the administrator can modify this file. Like the .bashrc file, the purpose of this file is to generate items that need to be created for each shell, such as local variables and aliases.
+
+BASH Exit Scripts
+Just as Bash executes one or more files upon starting up, it also may execute one or more files upon exiting. As Bash exits, it will execute the ~/.bash_logout and /etc/bash_logout files, if they exist. Typically, these files are used for "cleaning up" tactics as the user exits the shell. For example, the default ~/.bash_logout executes the clear command to remove any text present in the terminal screen.
+
+‌⁠​​⁠​ 
+Consider This
+
+When a new user is created, the files from the /etc/skel directory are automatically copied into the new user's home directory. As an administrator, you can modify the files in the/etc/skel directory to provide custom features to new users.
+
+Command History
+In a sense, the ~/.bash_history file could also be considered to be an initialization file, since Bash also reads this file as it starts up. By default, this file contains a history of the commands that a user has executed within the Bash shell. When a user exits the Bash shell, it writes out the recent history to this file.
+You can do a reverse search through history to find a previous command to select, edit, and execute it. To start the search, press Ctrl+R and then begin typing a portion of a previous command.
+
+
+Configuring the history Command
+When you close the shell program, it takes commands in the history list and stores them in the ~/.bash_history file, also called the history file. By default, five hundred commands will be stored in the history file. The HISTFILESIZE variable will determine how many commands to write to this file.
+
+If a user wants to store the history commands in a file that is different from ~/.bash_history, then the user can specify an absolute path to the different file as the value for the HISTFILE local variable:
+
+HISTFILE=/path/to/file
+The HISTSIZE variable will determine how many commands to keep in memory for each Bash shell. If the size of HISTSIZE is greater than the size of HISTFILESIZE, then only the most recent number of commands specified by HISTFILESIZE will be written to the history file when the Bash shell exits.
+
+Although it is not normally set to anything by default, you may want to take advantage of setting a value for the HISTCONTROL variable in an initialization file like the ~/.bash_profile file. The HISTCONTROL variable could be set to any of the following features:
+
+HISTCONTROL=ignoredups
+Prevents duplicate commands that are executed consecutively.
+
+HISTCONTROL=ignorespace
+Any command that begins with a space will not be stored. This provides the user with an easy way to execute a command that won't go into the history list.
+
+HISTCONTROL=ignoreboth
+Consecutive duplicates and any commands that begin with a space will not be stored.
+
+HISTCONTROL=erasedups
+Commands that are identical to another command in your history will not be stored. (The previous entry of the command will be deleted from the history list.)
+
+HISTCONTROL=ignorespace:erasedups
+Includes the benefit of erasedups with the advantage of ignorespace.
+
+Another variable that will affect what gets stored in the history of commands is the HISTIGNORE variable. Most users do not want the history list cluttered with basic commands like the ls, cd, exit, and history commands. The HISTIGNORE variable can be used to tell Bash not to store certain commands in the history list.
+
+To have commands not included in the history list, include an assignment like the following in the ~/.bash_profile file:
+
+HISTIGNORE='ls*:cd*:history*:exit'
+Note
+
+The * character is used to indicate anything else after the command. So, ls* would match any ls command, such as ls -l or ls /etc.
+
+Globbing will be covered in greater detail later in the course.
+
+Executing Previous Commands
+!!	Repeat the last command
+!-4	Execute the command that was run four commands ago
+!555	Execute command number 555
+!ec	Execute the last command that started with ec
+!?joe	Execute the last command that contained joe
+
+Instead of having to type the path again, a user can use a couple of keyboard shortcuts to recall that file path from the previous command line.
+
+By pressing either Esc+. (Escape+Period) or Alt+. (Alt+Period), the shell will bring back the last argument of the previous command. Repeatedly pressing one of these key combinations will recall, in reverse order, the last argument of each previous command.
+
