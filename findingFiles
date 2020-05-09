@@ -1,0 +1,211 @@
+6.1 Introduction
+Linux directory structure, typically called a filesystem and the filesystem standards supported by the Linux Foundation; the Filesystem Hierarchy Standard (FHS).
+
+Directory	Purpose
+/	The root of the primary filesystem hierarchy.
+/bin	Contains essential user binary executables.
+/boot	Contains the kernel and bootloader files.
+/dev	Populated with files representing attached devices.
+/etc	Configuration files specific to the host.
+/home	Common location for user home directories.
+/lib	Essential libraries to support /bin and /sbin executables.
+/mnt	Essential libraries to support /bin and /sbin executables.
+/opt	Optional third-party add-on software.
+/root	Home directory for the root user.
+/sbin	Contains system or administrative binary executables.
+srv	May contain data provided by system services.
+/tmp	Location for creating temporary files.
+/usr	The root of the secondary filesystem hierarchy.
+/usr/bin	Non-vital system or administrative executables.
+/usr/include	Header files for compiling C-based software.
+/usr/lib	Shared libraries to support /usr/bin and /usr/sbin.
+/usr/local	The root of the third filesystem hierarchy for local software.
+/usr/sbin	Non-vital system or administrative executables.
+/usr/share	Location for architecturally-independent data files.
+/usr/share/dict	Word lists.
+/usr/share/doc	Documentation for software packages.
+/usr/share/info	Information pages for software packages.
+/usr/share/locale	Locale information.
+/usr/share/man	Location for man pages.
+/usr/share/nls	Native language support files.
+
+
+The /run directory is being considered for use in the forthcoming FHS versions to contain volatile data that changes at runtime.
+
+The /sys directory in some traditional UNIX systems was used to hold files related to the kernel. In modern Linux systems, the /sys directory is used to mount the sysfs pseudo-filesystem. This filesystem is used to export information about kernel objects and their relationships to each other.
+
+Another notable change that some Linux distributions are making is the conversion of the /bin, /sbin and /lib directories into symbolic links which point to /usr/bin, /usr/sbin and /usr/lib, respectively. All user executables are now in the /usr/bin directory, administrator executables are now in the /usr/sbin directory, and the libraries to support all these executables are now in the /usr/lib directory.
+
+A symbolic link, also called a soft link, is simply a file that points to another file.
+
+Shareable / Unshareable
+
+Shareable files can be stored on one host and used on others. For instance, /var/www is often used as the root directory of a web server, which shares files with other hosts. Another example is the user home directories.
+
+Unshareable files should not be shared between hosts. These include process states in the /var/run directory and the /boot directory.
+
+Variable / Static
+
+Static files generally do not change, including library files and documentation pages. An example is the info pages located at /usr/share/info.
+
+Variable files normally change during the execution of programs. The /var/run directory contains files that are both variable and unshareable.
+
+6.3 Finding Files and Commands
+Both the locate and find commands are useful for searching for a file within the filesystem. While both commands perform similar tasks, each does so by using a different technique, with its own distinct advantages and disadvantages.
+
+6.3.1 locate Command
+the locate command can be described as fast, but always potentially out-of-date.
+that database needs to be updated to be accurate.
+
+A few things to consider when using the locate command:
+
+The locate command will only return results of files that the current user would normally have access to.
+
+The locate command will display all files that have the search term anywhere in the file name. For example, the search term passwd would match both /etc/opasswd and /etc/thishaspasswdinit.
+
+Like most things in Linux, the locate command is case sensitive. For example, the search term passwd would not match a file named /etc/PASSWD. To have the locate command not be case sensitive, use the -i option.
+
+This database can be updated manually by an administrator using the updatedb command, though typically this command is run automatically every day through cron
+
+sudo updatedb
+
+this is bad practice because all commands are executed with root privileges. This is seldom necessary and increases the risk that potentially dangerous commands may be executed as root, even though root privileges were not required or desired.
+
+The /etc/updatedb.conf file can be edited as the root user. Any name, path, or filesystem that is listed in the file on the appropriate line will not be added to the database.
+
+6.3.2 find Command
+The find command is slower than the locate command because it searches directories in real time; however, it doesn't suffer from problems associated with an outdated database.
+The find command expects a directory as the first argument.
+If no directory is specified, then the find command will start the search at the current directory.
+
+The find command uses the -name option to search for files by name
+globbing can be used
+
+find . -name Downloads
+
+Example	Meaning
+-iname LOSTFILE	Case insensitive search by name.
+-mtime -3	Files modified less than three days ago.
+-mmin -10	Files modified less than ten minutes ago.
+-size +1M	Files larger than one megabyte.
+-user joe	Files owned by the user joe.
+-nouser	Files not owned by any user.
+-empty	Files that are empty.
+-type d	Files that are directory files.
+-maxdepth 1	Do not use recursion to enter subdirectories; only search the primary directory.
+
+If multiple criteria are specified, then all criteria must match as the find command automatically assumes a logical AND condition between criteria, meaning all of the conditions must be met. This could be explicitly stated by using the -a option between criteria.
+
+Logical OR conditions can be specified between criteria with the -o option, meaning at least one of the conditions must be true. 
+
+find . -user sysadmin -a -name Downloads
+
+find . -user sysadmin -o -name Downloads
+
+find . -iname 'desk*' -o \( -name Downloads -a -user sysadmin \)
+
+find . -ls -iname 'desk*' -o \( -name Downloads -a -user sysadmin \)
+
+To make the output exactly like the output of the ls -l command, use the -exec option to execute ls -l on each file found. For example:
+
+sysadmin@localhost:~$ find -name 'Documents' -exec ls -l {} \;
+
+The \; is an escaped semicolon that is added between each command so that multiple commands may be executed in series.
+
+Example ls;cd .
+
+In order to make the find command confirm the execution of the command for each file found, use the action option -ok instead of the -exec option:
+
+sysadmin@localhost:~$ touch one two three
+sysadmin@localhost:~$ find . -mmin -2 -ok rm {} \;
+< rm ... . > ? n
+< rm ... ./one > ? y
+< rm ... ./two > ? y
+< rm ... ./three > ? y.
+
+find . -mmin -2 -ok rm {} \;
+
+Option	Function
+-mtime N	Files modified N*24 hours ago.
+-mtime -N	Files modified less than N*24 hours ago.
+-mtime +N	Files modified more than N*24 hours ago.
+To summarize, a number without a + or - means exactly N days ago, a number with a - means anytime between N days ago and NOW, and a number with a + means N days ago or more.
+
+find /home/sysadmin -type d -maxdepth 1
+
+6.3.3 whereis Command
+The whereis command can be used to search your PATH for the binary. It is also capable of searching for the man page, and source files for any given command.
+
+sysadmin@localhost:~$ whereis grep
+grep: /bin/grep /usr/share/man/man1/grep.1.gz /usr/share/info/grep.info.gz
+
+The output of the whereis command returns three directories. The first is where the grep command is located, in the /bin/grep directory. There is also a path given for the man page of the grep command at /usr/share/man/man1/grep.1.gz and another path for the info page at /usr/share/info/grep.info.gz. Without an option, the whereis command provides all three pieces of information.
+
+whereis -b grep
+
+whereis -m grep
+
+whereis -s grep
+
+To limit the search to a specific path or paths, capitalized options can be used. The -B option searches for binaries, the -M option for manuals and documentation, and the -S option for sources. The -f option must be used to indicate the end of the path list and the beginning of the search term.
+
+6.3.4 which Command
+Sometimes the whereis command returns more than one result on a command. In this case, an administrator would want to know which command is being used.
+
+sysadmin@localhost:~$ whereis -b bash
+bash: /bin/bash /etc/bash.bashrc
+
+To find out which bash result is the real command, in other words, the result that is used when executing the command, use the which command:
+
+sysadmin@localhost:~$ which bash
+/bin/bash
+
+The -a option can be used with the which command to locate multiple executable files. This would be useful to know if an executable script was inserted maliciously to override an existing command.
+
+sysadmin@localhost:~$ which -a ping
+/bin/ping
+By using the which command, an administrator can be fairly certain that the only executable running by the name of the ping command is located in the /bin directory.
+
+6.3.5 type Command
+The type command can be used to determine information about various commands.
+
+Using the -a option, the type command can also reveal the path of another command:
+
+sysadmin@localhost:~$ type -a echo
+echo is a shell builtin
+echo is /bin/echo
+
+The type command supports other options, and can lookup multiple commands simultaneously. To display only a single word describing the echo, ll, and which commands, use the -t option:
+
+sysadmin@localhost:~$ type -t echo ll which
+builtin
+alias
+file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+l

@@ -1,0 +1,177 @@
+5.1 Introduction
+
+There are three types of permissions: read, write, and execute. Each has a different meaning depending on whether they are applied to a file or a directory.
+
+Read:
+
+On a file, this allows processes to read the contents of the file, meaning the contents can be viewed and copied.
+
+On a directory, file names in the directory can be listed, but other details are not available.
+
+Write:
+
+A file can be written to by the process, so changes to a file can be saved. Note that the write permission usually requires the read permission on the file to work correctly with most applications.
+
+On a directory, files can be added to or removed from the directory. Note that the write permission requires the execute permission on the directory to work correctly.
+
+Execute:
+
+A file can be executed or run as a process.
+
+On a directory, the user can use the cd command to "get into" the directory and use the directory in a pathname to access files and, potentially, subdirectories under this directory.
+
+Typically, there are two places where you should always have the write and execute permissions on the directory: your home directory (for permanent files) and the /tmp directory (for temporary files).
+
+When listing a directory, the ls command normally will show the contents of that directory, but when the -d option is added, then it will display the directory itself:
+
+5.2 Listing Files
+sysadmin@localhost:~$ ls -ld /var/log
+
+
+
+File Type
+-rw-r--r-- 1 root root	15322 Feb 22 16:32 alternatives.log
+drwxr-xr-x 1 root root	 4096 Jul 19  2018 apt
+The first character of each line indicates the type of file. The file types are:
+
+Symbol	File Type	Description
+d	directory	A file used to store other files.
+-	regular file	Includes readable files, images files, binary files, and compressed files.
+l	symbolic link	Points to another file.
+s	socket	Allows for communication between processes.
+p	pipe	Allows for communication between processes.
+b	block file	Used to communicate with hardware.
+c	character file	Used to communicate with hardware.
+
+The permissions are read r, write w, and execute x. Breaking this down a bit:
+
+User Owner	Group Owner	Other
+drwxr-xr-x
+
+User Owner
+
+-rw-r----- 1 <b>syslog</b> adm 293 Mar 8 02:17 cron.log
+
+Group Owner
+
+-rw-rw-r-- 1 root <b>utmp</b> 292584 Mar 8 02:11 lastlog
+
+
+The final field contains the name of the file or directory. In the case of symbolic links, the link name will be shown along with an arrow and the path name of the file that is linked is shown.
+
+lrwxrwxrwx. 1 root root 22 Nov 6 2012 /etc/grub.conf -> ../boot/grub/grub.conf
+
+5.3 Viewing File Types
+To avoid viewing binary files, use the file command. The file command "looks at" the contents of a file to report what kind of file it is; it does this by matching the content to known types stored in a magic file.
+
+the file /bin/ls is an Executable Link Format (ELF); this file shouldn't be displayed with the cat command. While the cat command is able to output the contents of binary files, the terminal application may not handle displaying the content of binary files correctly.
+
+sysadmin@localhost:~$ file /bin/ls
+/bin/ls: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically lin
+ked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]
+=9567f9a28e66f4d7ec4baf31cfbf68d0410f0ae6, stripped
+
+Important
+
+If you use a command that is expecting a text file argument, you may get strange results if you provide a non-text file. Your terminal may become disrupted by attempting to output binary content; as a result, the terminal may not be able to function properly anymore.
+
+The result will be strange characters being displayed in the terminal. If this occurs, use the exit or logout commands to leave the terminal you were using and then reconnect or log in again. It may also be possible to execute the reset command. If this does not solve the problem, closing the terminal and opening a new one will solve the problem.
+
+5.4 Creating and Modifying Files
+
+Each file has three timestamps:
+
+The last time the file's contents were modified. This is the timestamp provided by the ls -l command by default. The touch command modified this timestamp by default.
+
+The last time the file was accessed. To modify this timestamp, use the -a option with the touch command.
+
+The last time the file attributes were modified. These file attributes, which include permissions and file ownership, are also called the file's metadata. To modify this timestamp, use the -c option with the touch command.
+
+The touch command will normally update the specified time to the current time, but the -t option with a timestamp value can be used instead.
+
+sysadmin@localhost:~$ touch -t 201912251200 newfile
+sysadmin@localhost:~$ ls -l newfile
+-rw-rw-r-- 1 sysadmin sysadmin 0 Dec 25  2019 newfile
+In the above command, the date/time syntax for the touch command is CCYYMMDDHHMM (optionally add SS for the seconds). The table below breaks down the date/time structure used in the example above in greater detail:
+
+Syntax	Example	Meaning
+CC	20	The century
+YY	19	The year
+MM	12	The month
+DD	25	The day
+HH	12	The hour
+MM	00	The minutes
+
+
+In order to view all three timestamps that are kept for a file, use the stat command with the path to the file as an argument:
+
+sysadmin@localhost:~$ stat Documents/alpha.txt
+
+5.5 Copying Files
+
+cp -a
+The archive -a option of the cp command copies the contents of the file and also attempts to maintain the original timestamps and file ownership.
+The -a option also implies that recursion will be done. Therefore, it can also be used to copy a directory.
+
+
+5.6 Moving Files and Directories
+There is no need for a recursive option with the mv command.
+
+5.7 Deleting Files
+When a file is deleted with the rm command, it is permanently gone.
+
+To avoid accidentally deleting files when using globbing characters, use the -i option. This option makes the rm command confirm interactively every file that you delete:
+
+Consider This
+
+The /tmp and /var/tmp directories do have the special permission called sticky bit set on them so that files in these directories can only be deleted by the user that owns them (with the exception of the root user who can delete any file in any directory). So, this means if you copy a file to the /tmp directory, then other users of the system will not be able to delete your file.
+
+5.8 Creating Directories
+The bin directory is a common directory for users to create in their home directory. It is a useful directory to place scripts that the user has created. In the following example, the user creates a bin directory within their home directory:
+
+sysadmin@localhost:~$ mkdir bin
+sysadmin@localhost:~$ ls
+Desktop	Downloads  Pictures  Templates  bin
+Documents  Music   Public    Videos
+
+By adding the -p option, the mkdir command automatically creates the parent directories for any child directories about to be created. This is especially useful for making deep path names:
+
+sysadmin@localhost:~$ mkdir -p /home/sysadmin/red/blue/yellow/green
+
+5.9 Removing Directories
+Using the -p option with the rmdir command will remove directory paths, but only if all of the directories contain other empty directories.
+
+sysadmin@localhost:~$ rmdir red
+rmdir: failed to remove 'red': Directory not empty
+sysadmin@localhost:~$ rmdir -p red/blue/yellow/green
+
+The rm command alone will ignore directories that it's asked to remove; to delete a directory, use either the -r or -R recursive options.
+
+
+PERMISSIONS YOU NEED TO EXECUTE THE COMMANDS
+
+Command	File Type	Permission
+ls -l	Directory	Read, Execute
+
+Command	File Type	Permission
+touch NEW_FILE	Parent Directory	Write, Execute
+touch EXISTING_FILE	File	Write
+
+Command	File Type	Permission
+cp	Source Directory	Execute
+cp	Source File	Read
+cp	Destination Directory	Write, Execute
+
+Command	File Type	Permission
+mv	Source Directory	Write, Execute
+mv	Destination Directory	Write, Execute
+
+Command	File Type	Permission
+rm	Parent Directory	Write, Execute
+
+Command	File Type	Permission
+mkdir	Parent Directory	Write, Execute
+
+Command	File Type	Permission
+rmdir	Parent Directory	Write, Execute
+
