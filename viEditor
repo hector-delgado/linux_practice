@@ -1,0 +1,163 @@
+9.1 Introduction
+Since vi is part of the Single UNIX Specification (SUS), it is required that conforming UNIX-based systems have it.
+
+
+In reality, most Linux systems don't include the original vi, but instead include an improved version of it, known as vim, for vi improved. This fact may be hidden by most Linux distributions. On some distributions, the vi file will link to vim:
+
+sysadmin@localhost:~$ which vi
+/usr/bin/vi
+sysadmin@localhost:/etc/alternatives$ ls -l vi
+lrwxrwxrwx 1 root root 17 Mar  2  2016 vi -> /usr/bin/vim.tiny
+‌⁠​​⁠​ While on other distributions, an alias exists that will execute vim when the vi command is run:
+
+[sysadmin@localhost ~]$ which vi
+alias vi='vim'
+/usr/bin/vim
+‌⁠​​⁠​ 
+For the most part, vim works just like vi but has additional features, including the ability to use the arrow ←↓↑→ keys for navigation.
+
+For the topics that will be covered in this course, either vi or vim will work. For simple editing tasks, nano is available on many systems. Users who don’t have all the keyboard commands memorized that are needed for vi will appreciate its menu at the bottom of the editing screen and straightforward command structure.
+
+On the other end of the spectrum is the emacs editor, an “extensible, customizable, self-documenting real-time display editor.” For programmers and others that need sophisticated editing tools in a command line environment, this piece of GNU software provides maximum capability and flexibility. Emacs goes far beyond just text editing with a built-in Lisp programming interpreter and content-aware editing modes that allow syntax coloring for different file types. It includes a packaging system for downloading and installing custom user extensions to expand its capabilities, which include project planning, mail and news readers, debuggers, calendars, and many other productivity tools. Emacs also has a built-in documentation system with tutorials, and full Unicode support for almost every character set and script imaginable, so practically anyone can use it in their native language. Essentially, it’s a power tool for power users that can perform as an infinitely customizable user interface for those that wish to control every aspect of their systems.
+
+This chapter will mainly focus on how to use vi and how to configure the default editor in the shell. To get started using the vi editor, simply type the command, followed by the path name of the file to edit or create:
+
+sysadmin@localhost:~$ vi newfile
+
+9.2 Command Mode Movement
+There are three modes used in the vi editor: command mode, insert mode, and ex mode.
+
+Initially, the program starts in command mode. Command mode is used to type commands, such as those used to move around a document, manipulate text, and access the other two modes. To return to command mode at any time, press the Esc key.
+
+Once some text has been added into a document, to perform actions like moving the cursor, the Esc key needs to be pressed first to return to command mode. This seems like a lot of work, but remember that vi works in a terminal environment where a mouse is useless.
+
+Movement commands in vi have two aspects: a motion and an optional number prefix, which indicates how many times to repeat that motion. The general format is as follows:
+
+[count] motion
+The following table summarizes the motion keys available:
+
+‌⁠​​⁠​ 
+Motion	Result
+h	Left one character
+j	Down one line
+k	Up one line
+l	Right one character
+w	One word forward
+b	One word back
+^	Beginning of the line
+$	End of the line
+Note
+
+Since the upgrade to vim, it is also possible to use the arrow ←↓↑→ keys instead of hjkl respectively.
+
+These motions can be prefixed with a number to indicate how many times to perform the movement. For example, the 5h command would move the cursor five characters to the left and 3w would move the cursor three words to the right.
+
+To move the cursor to a specific line number, type that line number followed by the G character. For example, to get to the fifth line of the file, type the 5G command. The 1G or gg commands can be used to go to the first line of the file, while a single G will take you to the last line. To find out which line the cursor is currently on, use Ctrl+G.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.
