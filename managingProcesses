@@ -1,9 +1,12 @@
-11.2 Process Control
+####################################################################################################################
+#11.2 Process Control ##############################################################################################
 As mentioned in a previous chapter, running a command results in something called a process. In the Linux operating system, processes are executed with the privileges of the user who executes the command. This allows for processes to be limited to certain capabilities based upon the user identity. For example, typically a regular user cannot control another user's processes.
 
 Although there are exceptions, generally the operating system will differentiate users based upon whether they are the administrator (also called the root user) or not. Non-root users are referred to as regular users. Users who have logged into the root account can control any user processes, including stopping any user process.
 
-11.2.1 Listing Processes
+
+####################################################################################################################
+#11.2.1 Listing Processes ##########################################################################################
 The ps command can be used to list processes.
 
 ps [OPTION]...
@@ -82,3 +85,883 @@ root        15  0.0  0.0  72296  3272 ?        Ss   16:41   0:00 /usr/sbin/sshd
 sysadmin   108  0.0  0.0  11464  1032 ?        S+   17:53   0:00 grep --color=auto -i sshd                                          
 The command above uses the pipe | character to send the ps aux command to the grep command and the -i option to perform a case insensitive search for the sshd process.
 
+
+####################################################################################################################
+#11.2.2 Searching For Processes ####################################################################################
+Since we have just shown how to find processes using the ps command, and how a user can use the ps command and the grep command to find certain named processes, it follows logically that we cover the pgrep command; effectively marrying the ps and grep commands together.
+
+The pgrep command parses through the running processes and looks for the specified names or other criteria of processes, rather than having to run the ps command, pipe its output to the grep command and then look at the results. Users can simply use the pgrep command and various options to return what they need to find. For example, recall that the -i option makes the grep command case insensitive. This option can also be used with the pgrep command.
+
+If you wanted to find all instances of the sshd command running on the system, you could use the following command:
+
+sysadmin@localhost:~$ pgrep -i sshd
+15
+The output shows the process IDs (PID) of the processes running that match the sshd string. Additionally, the -l option can be used with the pgrep command to list the process name along with the PID:
+
+sysadmin@localhost:~$ pgrep -li sshd
+15 sshd
+It is also possible to search for processes owned by a specific user by using the -u option:
+
+sysadmin@localhost:~$ pgrep -u sysadmin -l
+56 bash
+In the example above, the -u and -l options displayed the bash process which has the PID 56 and is owned by the sysadmin user.
+
+
+####################################################################################################################
+######################11.2.3 Watching Processes#####################################################################
+There are many times when it’s advantageous or informative to see a process execute over and over again. In those cases, the watch command can be used to monitor recurring processes by using the following syntax:
+
+watch [OPTION]... COMMAND
+A command that would normally execute and exit could be used with the watch command to execute repeatedly. A good visual example would be to run the watch command with the date command to view the date command running repeatedly:
+
+sysadmin@localhost:~$ watch date
+Every 2.0s: date                             localhost: Fri Mar 27 18:30:55 2019
+
+Fri Mar 27 18:30:55 UTC 2020
+In the example above, the watch command will run the date command repeatedly and display the updated output. By default, the watch command runs the given command every two seconds so the output of the date command will change to show a two-second difference.
+
+Important
+
+To fully exit the watch command, press Ctrl+C.
+
+The watch command can also be used with the ps command to monitor running processes in the shell:
+
+sysadmin@localhost:~$ watch ps aux
+        Every 2.0s: ps aux                           localhost: Fri Mar 29 17:47:56 2019
+
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.0  18376  3048 ?        Ss   17:44   0:00 /bin/bash /init
+syslog       9  0.0  0.0 191328  3760 ?        Ssl  17:44   0:00 /usr/sbin/rsysl
+ogd
+root        13  0.0  0.0  28356  2512 ?        Ss   17:44   0:00 /usr/sbin/cron
+root        15  0.0  0.0  72296  3216 ?        Ss   17:44   0:00 /usr/sbin/sshd
+bind        24  0.3  0.0 813852 39648 ?        Ssl  17:44   0:00 /usr/sbin/named
+ -u bind
+root        43  0.0  0.0  78636  3704 ?        S    17:44   0:00 /bin/login -f
+sysadmin    60  0.0  0.0  18508  3444 ?        S    17:44   0:00 -bash
+sysadmin    75  0.0  0.0  11180  2328 ?        S+   17:47   0:00 watch ps aux
+sysadmin   136  0.0  0.0  11180   344 ?        S+   17:47   0:00 watch ps aux
+sysadmin   137  0.0  0.0   4628   920 ?        S+   17:47   0:00 sh -c ps aux
+sysadmin   138  0.0  0.0  34400  2952 ?        R+   17:47   0:00 ps aux
+In the example above, the watch command executes the ps aux command, which displays all running processes in the shell, repeatedly. If a new program was executed in the shell, the output of the ps aux command would update to show the new process.
+
+Recall that the watch command’s default interval is two seconds. Therefore, to change the interval, use the -n option followed by the specific interval desired (in seconds) after, and then specify the command to monitor.
+
+watch -n # [COMMAND...]
+The watch command will re-execute that command on a consistent basis at the specified interval until you quit that command or Ctrl+C to stop the watch command itself.
+
+The watch command can also be used to keep track of changes in a configuration file, log files or anything that changes over time. For example, the watch command can be used with the tail command to monitor the log file /var/log/ndg/web.log.
+
+Note
+
+To execute the next example, first use the command below to generate new log entries in the /var/log/ndg/web.log file:
+
+sysadmin@localhost:~$ start_log
+Starting log...
+To monitor changes to the last twenty lines of the /var/log/ndg/web.log log file and execute the tail command every fifteen seconds, use the following command:
+
+sysadmin@localhost:~$ watch -n 15 tail -n 20 /var/log/ndg/web.log
+Every 15.0s: tail -n 20 /var/log/ndg/web.log localhost: Thu Apr  4 03:20:22 2019
+
+192.0.2.225     [2019-04-04T03:20:14]   200     "GET  /news/?search=cats"
+192.0.2.15      [2019-04-04T03:20:16]   500     "GET  /news/puppy-and-cat"
+192.0.2.143     [2019-04-04T03:20:17]   301     "GET  /news/?search=cats"
+192.0.2.60      [2019-04-04T03:20:18]   403     "POST /news/"
+192.0.2.194     [2019-04-04T03:20:19]   301     "GET  /news/puppy-and-cat"
+192.0.2.59      [2019-04-04T03:20:20]   500     "GET  /news/puppy-and-cat"
+192.0.2.23      [2019-04-04T03:20:21]   301     "GET  /news/?search=cats"
+192.0.2.129     [2019-04-04T03:20:21]   403     "GET  /login/?redirect_to=/news"
+You can also highlight any differences between each successive execution of the program that is being watched by specifying the -d option. In the example below, the watch command is used with the -d option to run the free command, used to display memory on the system, repeatedly:
+
+sysadmin@localhost:~$ watch -d free
+Every 2.0s: free                             localhost: Wed Apr  3 16:28:21 2019
+
+              total        used        free      shared  buff/cache   available
+Mem:      132014640    28609416    96251712        5916     7153512   102777272
+Swap:     134196220           0   134196220
+The output above will show the amount of used, free, and available memory in the Mem: row updating every two seconds, and the differences in the memory will be highlighted in each new refresh of the screen.
+
+####################################################################################################################
+11.2.5 Executing Multiple Commands##################################################################################
+Before discussing background processes, consider how multiple commands can be executed on a single command line.
+
+Normally, users only type one command per command line, but by using the semicolon ; character as a delimiter between commands, a user can type multiple commands on one command line. Rarely is it really necessary to run two or more commands from one command line, but sometimes it can be useful.
+
+When commands are separated by the semicolon, the command to the left of the semicolon executes; when it finishes, the command to the right of the semicolon executes. Another way of describing this is to say that the commands execute in sequence.
+
+COMMAND;COMMAND[;COMMAND]...
+COMMAND; COMMAND[; COMMAND]...
+The sleep command will pause for a specified number of seconds before continuing to the next command. The following example will print Hello, pause for 5 seconds, then print World:
+
+sysadmin@localhost:~$ echo Hello; sleep 5; echo World
+Hello
+World
+Recall that an alias is a feature that allows a user to create nicknames for commands or command lines. An alias that runs multiple commands can be very useful; to accomplish this, the user would use the ; character between each of the commands when creating the alias. For example, to create an alias called welcome which outputs the current user, the date, and the current directory listing, execute the following command:
+
+sysadmin@localhost:~$ alias welcome="whoami;date;ls" 
+Now the alias welcome will execute the whoami, date, and ls commands in series like so:
+
+sysadmin@localhost:~$ welcome
+sysadmin
+Tue Mar 26 21:07:10 UTC 2019
+Desktop  Documents  Downloads  Music  Pictures  Public  Templates  Videos
+A real-life scenario involving multiple commands occurs when an administrator needs to take down and restart the network connection remotely. If the user typed the one command to bring down the network and then executed it, then the network connection would be terminated, and the user wouldn't be able to bring the network back up again. Instead, the user could type the command to take down the network, followed by a semicolon, then the command to bring up the network. After pressing the Enter key, both commands would execute, one right after the other.
+
+
+####################################################################################################################
+11.2.6 Background Processes#########################################################################################
+When a command may take some time to execute, it may be better to have that command execute in the background. When executed in the background, a child process releases control back to the parent process (the shell, in this case) immediately, allowing the user to execute other commands. To have a command execute as a background process, add the ampersand & character after the command.
+
+COMMAND &
+For example, the following executes the sleep command for three seconds in the background. Pressing Enter after the sleep command runs will display information about the background process:
+
+sysadmin@localhost:~$ sleep 3 & 
+[1] 87
+sysadmin@localhost:~$
+[1]+  Done                    sleep 3 
+As shown in the output, when executing commands in the background; after each command starts executing, it outputs a job number followed by a space and then the process identification number (PID). These numbers are used for controlling the process. The sleep command in the preceding example has a job number of 1 and a PID of 87.
+
+While there are still background processes being run in the terminal, they can be displayed by using the jobs command. It is important to point out that the jobs command will only show background processes in the current terminal. If background processes are running in another terminal, they will not be shown by running the jobs command in the current terminal. The following is an example of using the jobs command:
+
+sysadmin@localhost:~$ sleep 1000 &
+[1] 106
+sysadmin@localhost:~$ sleep 2000 &
+[2] 107
+sysadmin@localhost:~$ jobs
+[1]-  Running                 sleep 1000 &
+[2]+  Running                 sleep 2000 &
+In the example above, the jobs command shows the two sleep processes running in the background. The job number of a process is sometimes followed by a minus - or a plus + character. The plus + character denotes the last process that was started, while the minus - character denotes a process started previous to the latest one. Once a third job is created, only the most recent job will have the + next to it and the next-most recent, or previous, job will have the - next to it. All other jobs will have a blank in that space. This allows you to see what the most recent and next-most recent jobs are very quickly.
+
+To terminate the processes, send them to the foreground by using the fg command with the job number of the process to terminate, and while the process is running in the foreground, use Ctrl+C, a signal which stops the process:
+
+sysadmin@localhost:~$ fg 1
+sleep 1000
+^C
+sysadmin@localhost:~$ fg 2
+sleep 2000
+^C
+sysadmin@localhost:~$ jobs
+sysadmin@localhost:~$
+Note
+
+The fg command, as well as a more efficient method for terminating processes, will be covered in greater detail later in this chapter.
+
+To have multiple commands run in the background on one command line, place an ampersand & character after each command on the command line. In the next example, all three commands execute at the same time and release control back to the shell, so a user does not have to wait for any of the commands to finish before executing another command (although the user may need to press Enter again to get a prompt):
+
+sysadmin@localhost:~$ echo Hello & echo World & echo '!' &
+[1] 94
+[2] 95
+Hello
+[3] 96
+sysadmin@localhost:~$ World
+!
+
+[1]   Done                    echo Hello
+[2]-  Done                    echo World
+[3]+  Done                    echo '!'   
+
+
+####################################################################################################################
+11.2.7 Moving Processes#############################################################################################
+If the following sleep command is run without an ampersand character to send it to the background, the terminal would not be available for 1000 seconds:
+
+sysadmin@localhost:~$ sleep 1000
+_
+To make the terminal available again, the user would have to use Ctrl+Z, a signal which pauses the process:
+
+^Z
+[1]+  Stopped                 sleep 1000
+Now the terminal is back, but the sleep command has been paused. To put the paused command in the background, execute the bg command.
+
+bg [JOB_ID]...
+The bg command resumes jobs without bringing them to the foreground. If no argument is provided, it will use the most recently suspended job.
+
+sysadmin@localhost:~$ bg
+[1]+ sleep 1000 &
+A command that has been paused or sent to the background can then be returned to the foreground using the fg command.
+
+fg [JOB_ID]...
+Similar to the bg command, if no argument is provided, the job that was most recently suspended or placed in the background will be used. To bring the sleep command back to the foreground, locking up the terminal again, use the fg command:
+
+sysadmin@localhost:~$ fg
+sleep 1000
+_
+^C
+sysadmin@localhost:~$
+Suppose we have two paused processes:
+
+sysadmin@localhost:~$ sleep 1000
+^Z
+[1]+  Stopped                 sleep 1000
+sysadmin@localhost:~$ sleep 2000
+^Z
+[2]+  Stopped                 sleep 2000
+sysadmin@localhost:~$ jobs
+[1]   Running                 sleep 1000 &
+[2]-  Running                 sleep 2000 &
+Both bg and fg can take the job number as an argument to specify which process should be resumed. The following commands will resume sleep 1000 in the background and resume sleep 2000 in the foreground respectively:
+
+sysadmin@localhost:~$ bg 1
+[1]- sleep 1000 &
+sysadmin@localhost:~$ fg 2
+sleep 2000
+^Z
+[2]+  Stopped                 sleep 2000  
+It is also possible to use the name of the command as an argument to the bg and fg commands:
+
+sysadmin@localhost:~$ sleep 1000
+_
+^Z
+[1]+  Stopped                 sleep 1000
+sysadmin@localhost:~$ bg sleep
+[1]+ sleep 1000 &
+Given multiple tasks and only one terminal to use with them, the fg and bg commands provide an administrator with the ability to manually multi-task.
+
+####################################################################################################################
+11.2.8 Sending a Signal#############################################################################################
+A signal is a message that is sent to a process to tell the process to take some sort of action, such as stop, restart, or pause. Signals are very useful in controlling the actions of a process.
+
+Some signals can be sent to processes by simple keyboard combinations. For example, to have a foreground process paused, send a Terminal Stop signal by pressing Ctrl+Z. A Terminal Stop pauses the program but does not completely stop the program. To completely stop a foreground process, send the Interrupt signal by pressing Ctrl+C.
+
+There are many different signals; each of them has a symbolic name and a numeric identifier. For example, Ctrl+C is assigned the symbolic name SIGINT and the numeric identifier of 2.
+
+To see a list of all of the signals available for your system, execute the kill -l command:
+
+sysadmin@localhost:~$ kill -l
+ 1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
+ 6) SIGABRT      7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
+11) SIGSEGV     12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
+16) SIGSTKFLT   17) SIGCHLD     18) SIGCONT     19) SIGSTOP     20) SIGTSTP
+21) SIGTTIN     22) SIGTTOU     23) SIGURG      24) SIGXCPU     25) SIGXFSZ
+26) SIGVTALRM   27) SIGPROF     28) SIGWINCH    29) SIGIO       30) SIGPWR
+31) SIGSYS      34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
+38) SIGRTMIN+4  39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
+43) SIGRTMIN+9  44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
+48) SIGRTMIN+14 49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
+53) SIGRTMAX-11 54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
+58) SIGRTMAX-6  59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
+63) SIGRTMAX-1  64) SIGRTMAX
+These signals can have unique meanings that are specific to a certain command (as the programmer who created the command can adjust the behavior of the program), but generally they allow for processes to be stopped and resumed, for processes to reconfigure themselves, or to end a process. All the signals with a number greater than 31 are for controlling real-time processes, a topic which is beyond the scope of this course. Some of the more common signals are summarized in the following table:
+
+Number	Full Name	Short Name	Purpose
+1	SIGHUP	HUP	Hang up, usually ends a process
+2	SIGINT	INT	Interrupt, usually ends a process
+3	SIGQUIT	QUIT	Quit, usually ends a process
+9	SIGKILL	KILL	Kill, forcefully ends a process
+15	SIGTERM	TERM	Terminate, usually ends a process
+18	SIGCONT	CONT	Continue, resumes a stopped process
+19	SIGSTOP	STOP	Stop, forcefully stops a process
+20	SIGTSTP	TSTP	Terminal Stop, usually stops a process
+There are several commands that will allow you to specify a signal to send to a process; the kill command is the most commonly used. The syntax for the kill command looks like the following:
+
+kill [OPTIONS]... <pid>
+The kill command specifies which signal to be sent using options. It accepts three different ways to specify the signal:
+
+-<signal>
+-s <signal>
+--signal <signal>
+The signal can be specified by using the number, the short name, or the full name. For example, to specify the Interrupt signal, any of the following options could be used:
+
+-2
+-INT
+-SIGINT
+If the user doesn't specify a signal with an option, then the kill command defaults to sending the Terminate SIGTERM signal.
+
+When sending a signal, specify one or more processes to send the signal to. There are numerous techniques to specify the process or processes. The more common techniques include:
+
+Specifying the process identifier (PID)
+Using the % (percent sign) prefix to the job number
+For example, imagine a scenario where a user is running some process in the background and that user wants to send a signal to the process. For this demonstration, the sleep command is run in the background:
+
+sysadmin@localhost:~$ sleep 5000&
+[1] 2901
+A couple of items are noteworthy from the output of starting this process in the background. First, notice the job number in square brackets [1]. Second, notice the process identifier (PID) which is 2901. To send the Terminate signal, to this process, you can use either of the following commands:
+
+sysadmin@localhost:~$ kill 2901
+sysadmin@localhost:~$ kill %1
+As indicated earlier, the Terminate signal normally will end a process. Sometimes a process will trap the Terminate signal so it may not end that process. Trapping occurs when a process behaves differently from the norm when it receives a signal; this can be the result of how the programmer created the code for the command.
+
+A user could try to use other signals, like SIGQUIT or SIGINT, to try to end a process, but these signals can also be trapped. The only signal that will end a process and can't be trapped is a SIGKILL signal. So, if other signals have failed to end a process, use the SIGKILL signal to force the process to end.
+
+Users should not normally use the SIGKILL signal as the initial attempt to try to end a process because this forces the process to end immediately and will not allow the process the opportunity to "clean up" after itself. Processes often perform critical operations, such as deleting temporary files, when they exit naturally.
+
+The following examples show two ways to send the Kill signal to a process:
+
+sysadmin@localhost:~$ kill -9 2901
+sysadmin@localhost:~$ kill -KILL %1
+There are other commands that send processes signals, such as the killall and pkill commands, which are useful to stop many processes at once; whereas the kill command is a good choice for sending signals to a single process. The pkill command can be used to terminate one or more processes by name and other criteria such as the terminal and UID. Similar to how the pgrep command searches for a process by matching its name or pattern, the pkill command allows users to specify a pattern that matches a process name and then sends signals to that process. The following is a commonly used syntax for the pkill command:
+
+pkill [OPTIONS]... PATTERN
+The killall command can also be used to terminate one or more processes by name and other criteria such as the user owner of the process and system processes. The following demonstrates syntax that can be used for the killall command:
+
+killall [OPTIONS]... NAME
+Like the kill command, signals can be specified using either the number or signal name for both the killall and pkill commands. Unlike the kill command, these other commands can be used to terminate all processes of a particular user with the -u option. For example, killall -u bob would stop all of the process owned by the bob user.
+
+The killall and pkill commands also accept the name of the process instead of a process or job number. Just be careful as this may end up stopping more processes than you had expected. An example of stopping a process using the process name:
+
+sysadmin@localhost:~$ kill sleep
+-bash: kill: sleep: arguments must be process or job IDs
+sysadmin@localhost:~$ killall sleep
+[1]+  Terminated              sleep 5000
+Consider This
+
+You could very easily feed the output of the pgrep command to the kill command to terminate a process. For example, by using the xargs command to help feed the lines of the output to the kill command one at a time, so it works properly:
+
+sysadmin@localhost:~$ pgrep -i nano | xargs kill -9
+This will result in the kill -9 command being run on each of the PIDs that pgrep brought back for the nano query.
+
+
+####################################################################################################################
+11.2.9 HUP Signal###################################################################################################
+When a user logs off the system, all processes that are owned by that user are automatically sent the Hang Up SIGHUP signal. Typically, this signal causes those processes to end.
+
+In some cases, a user may want to execute a command that won't automatically exit when it is sent a HUP signal. To have a process ignore a Hang Up signal, start the process with the nohup command.
+
+nohup COMMAND [ARG]...
+For example, consider a scenario where a user has a script named myjob.sh that needs continue to run all night long. The user should start that script in the background of the terminal by executing:
+
+sysadmin@localhost:~$ nohup myjob.sh &
+After executing the script, the user could proceed to log out. The next time the user logs in, the output of the script, if any, would be contained in the nohup.out file in that user's home directory.
+
+
+####################################################################################################################
+11.2.10 Process Priority############################################################################################
+When a process runs, it needs to have access to the CPU to perform actions. Not all processes have the same access to the CPU. For example, system processes typically have a higher priority when accessing the CPU.
+
+The Linux kernel dynamically adjusts the priority of processes to try to make the operating system seem responsive to the user and efficient at performing tasks. A user can influence the priority that will be assigned to a process by setting a value of something called niceness.
+
+-20 highest | priority 0 default niceness | 19 lowest priority
+
+Niceness scale. From left to right; -20 Highest priority, 0 Default niceness, 19 Lowest priority.
+The higher you set the niceness value, the lower the priority that will be assigned to a process. The default value of niceness for processes is zero; most user processes run at this nice value. Only a user with administrative (root) access can set negative niceness values or alter the niceness of an existing process to be a lower niceness value.
+
+To set the initial niceness of a command, use the nice command as a prefix to the command to execute.
+
+nice [OPTION] [COMMAND [ARG]...]
+The -n option indicates the desired niceness value. For example, to execute a command at the lowest priority possible, execute the following command:
+
+sysadmin@localhost:~$ nice -n 19 cat /dev/zero > /dev/null
+^Z
+[1]+  Stopped                 nice -n 19 cat /dev/zero > /dev/null
+If a user logs in as the root user, they could also execute a command with the highest priority possible by executing the following command:
+
+Note
+
+The su command used below allows a regular user to become the root user temporarily. The user is required to enter the root account password, when prompted. To use the su command in our virtual environment, enter the root password netlab123.
+
+sysadmin@localhost:~$ su -
+Password:
+root@localhost:~# nice -n -20 cat /dev/zero > /dev/null
+^Z
+[1]+  Stopped                 nice -n -20 cat /dev/zero > /dev/null
+root@localhost:~# nice -n 19 cat /dev/zero > /dev/null
+^Z
+[2]+  Stopped                 nice -n 19 cat /dev/zero > /dev/null
+To adjust the niceness of an existing process, use the renice command. This can be useful when the system becomes less responsive after running a CPU intensive command. A user could make the system more responsive again by making that process run "nicer".
+
+To accomplish this, the user would need to discover the process identifier for the process by using the ps command. For example:
+
+‌⁠​​⁠​ Note
+
+The Process ID in our virtual machine environment will likely be different than the one in the example.
+
+root@localhost:~# nice -n -20 cat /dev/zero > /dev/null &
+[1] 121
+root@localhost:~# ps
+  PID TTY          TIME CMD
+    1 ?        00:00:00 init
+   70 ?        00:00:00 login
+  108 ?        00:00:00 su
+  109 ?        00:00:00 bash
+  121 ?        00:00:04 cat
+  122 ?        00:00:00 ps
+Next, use the renice command to adjust the priority back to normal. Like the nice command, the -n option indicates the niceness value. The -p option indicates the process ID to operate on.
+
+root@localhost:~# renice -n 0 -p 121
+121 (process ID) old priority -20, new priority 0
+
+####################################################################################################################
+11.2.11 Monitoring Processes########################################################################################
+While the ps command can display active processes, the top command provides the ability to monitor processes in real-time, as well as manage the processes. By default, the output of the top command will update every three seconds. For example, the following output demonstrates how the top command can be used to monitor processes currently running in the terminal, such as the three cat commands executed in the previous section:
+
+sysadmin@localhost:~$ top
+top - 16:47:34 up 51 days,  2:12,  1 user,  load average: 1.37, 1.56, 1.49
+Tasks:  13 total,   4 running,   9 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.3 us, 37.2 sy,  0.2 ni, 62.1 id,  0.0 wa,  0.1 hi,  0.0 si,  0.0 st
+KiB Mem:  16438128 total, 13108516 used,  3329612 free,     4276 buffers
+KiB Swap:        0 total,        0 used,        0 free.  9808716 cached Mem
+ 
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+  164 root      20   0    4364    696    616 R  87.4  0.1   1:23.32 cat
+  165 root      30  10    4364    696    620 T   9.3  0.1   0:49.13 cat
+  166 root      39  19    4364    772    696 T   1.7  0.1   0:41.75 cat
+    1 root      20   0   17960   2972   2724 S   0.0  0.0   0:00.02 init
+   33 syslog    20   0  255844   2728   2296 S   0.0  0.0   0:00.03 rsyslogd
+   38 root      20   0   23656   2288   2076 S   0.0  0.0   0:00.00 cron
+   40 root      20   0   61364   3124   2444 S   0.0  0.0   0:00.00 sshd
+   57 bind      20   0  689640  29580   5328 S   0.0  0.2   0:00.13 named
+   70 root      20   0   63132   2900   2452 S   0.0  0.0   0:00.00 login
+   80 sysadmin  20   0   18176   3384   2896 S   0.0  0.0   0:00.04 bash
+  151 root      20   0   46628   2708   2360 S   0.0  0.0   0:00.01 su
+  152 root      20   0   18180   3388   2896 S   0.0  0.0   0:00.01 bash
+  167 root      20   0   19860   2452   2124 R   0.0  0.0   0:00.00 top
+Upon closer investigation of the niceness column NI and the CPU usage percentage column %CPU in the output above, we can see that the cat command with the lowest niceness (0) is using the highest percentage CPU (87.4), while the cat command with the highest niceness (19) is using the lowest percentage CPU (1.7).
+
+The top command has numerous features; for example, it can be manipulated in an interactive manner. Pressing the H key while the top command is running will result in it displaying a help screen:
+
+Help for Interactive Commands - procps-ng version 3.3.9
+Window 1:Def: Cumulative mode Off.  System: Delay 3.0 secs; Secure mode Off.
+ 
+  Z,B,E,e   Global: 'Z' colors; 'B' bold; 'E'/'e' summary/task memory scale
+  l,t,m     Toggle Summary: 'l' load avg; 't' task/cpu stats; 'm' memory info
+  0,1,2,3,I Toggle: '0' zeros; '1/2/3' cpus or numa node views; 'I' Irix mode
+  f,F,X     Fields: 'f'/'F' add/remove/order/sort; 'X' increase fixed-width
+ 
+  L,&,<,> . Locate: 'L'/'&' find/again; Move sort column: '<'/'>' left/right
+  R,H,V,J . Toggle: 'R' Sort; 'H' Threads; 'V' Forest view; 'J' Num justify
+  c,i,S,j . Toggle: 'c' Cmd name/line; 'i' Idle; 'S' Time; 'j' Str justify
+  x,y     . Toggle highlights: 'x' sort field; 'y' running tasks
+  z,b     . Toggle: 'z' color/mono; 'b' bold/reverse (only if 'x' or 'y')
+
+  u,U,o,O . Filter by: 'u'/'U' effective/any user; 'o'/'O' other criteria
+  n,#,^O  . Set: 'n'/'#' max tasks displayed; Show: Ctrl+'O' other filter(s)
+  C,...   . Toggle scroll coordinates msg for: up,down,left,right,home,end
+ 
+  k,r       Manipulate tasks: 'k' kill; 'r' renice
+  d or s    Set update interval
+  W,Y       Write configuration file 'W'; Inspect other output 'Y'
+  q         Quit
+          ( commands shown with '.' require a visible task display window )
+Press 'h' or '?' for help with Windows,
+Type 'q' or <Esc> to continue
+The K and R keys are used to manage tasks or processes within the top program.
+
+Pressing the K key will allow a user to kill or send a signal to a process. After pressing the K key, the top command will prompt for a PID and then for a signal to send to that process.
+
+Pressing the R key will allow a user to renice a process by prompting for the PID and then the new niceness value.
+
+Press the Q key to quit the top command.
+
+####################################################################################################################
+11.3 Monitoring the System##########################################################################################
+There are also a couple of commands that can be used to monitor the overall state of the system: the uptime and free commands.
+
+The uptime command shows the current time and the amount of time the system has been running, followed by the number of users who are currently logged in and the load averages during the past one, five, and fifteen-minute intervals.
+
+To get a good idea of how busy a system is, use the uptime command:
+
+sysadmin@localhost:~$ uptime
+18:24:58 up 5 days, 10:43,  1 user,  load average: 0.08, 0.03, 0.05
+The numbers reported for the load averages are based upon how many CPU cores are available. Think of each processor as having 100% resources (CPU time) available. One processor = 100%, four processors = 400%. The uptime command is reporting the amount of resources used, but it is dividing by 100. So, 1.00 is actually 100% of the CPU time being used, 2.00 is 200% and so on.
+
+If a system has only one CPU core, then a value of 1.00 indicates that the system was fully loaded with tasks. If the system has two CPU cores, then a value of 1.00 would indicate a 50% load (1.00/2.00). An uptime reading of 1.00 (or 100%) usage on a 4 core CPU would imply that 1.00/4.00 (1/4 or 25%) of the CPU's total computational resources are being used.
+
+Consider This
+
+If you don’t know how many CPU cores are available on a Linux system, there is a way to obtain this information on the command line. The lscpu command can be used to see how many CPU cores are available on the system:
+
+sysadmin@localhost:~$ lscpu
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              16
+On-line CPU(s) list: 0-15
+Thread(s) per core:  2
+Core(s) per socket:  4
+Socket(s):           2
+Output Omitted...
+In the example above, the output indicates that there are eight total CPU cores. Two sockets and four cores per socket totals eight CPU cores.
+
+Although the lscpu command is beyond the scope of this course, it is covered in further detail in NDG Linux Essentials, where you can learn about understanding system hardware.
+
+To get an idea of how your system is using memory, the free command is helpful. This command displays not only the values for the random-access memory (RAM) but also for swap, which is space on the hard disk that is used as memory for idle processes when the random-access memory starts to become scarce.
+
+The free command reports the total amount of memory, as well as how much is currently being used and how much is free (available) for use. The output also breaks down the use of memory for buffers and caches:
+
+sysadmin@localhost:~$ free
+             total       used       free     shared    buffers     cached
+Mem:      16438128   13106024    3332104       3200       4276    9808896
+
+-/+ buffers/cache:    3292852   13145276
+Swap:            0          0          0
+If logged into the Gnome desktop environment, the user can use the gnome-system-monitor program. This tool (pictured below) is analogous to the Task Manager in Microsoft Windows. It provides four tabs to view information about the System, Processes, Resources, and File Systems.
+
+This graphical tool allows users to select a process and send a signal to it to terminate it, as well as view all current processes updated in real-time.
+
+The gnome-system-monitor graphical tool showing four tabs labeled System, Processes, Resources, and File Systems.
+Consider This
+
+The K desktop environment (KDE) has a similar program, the ksysguard command. The Gnome desktop environment is not available in the virtual environment for this chapter.
+
+####################################################################################################################
+11.4 Multi-Session Command Line Utilities###########################################################################
+Now that we have discussed process creation and management, we can talk about a related topic, which is how you can manage multiple processes inside a single Bash shell environment.
+
+The need for multiple processes inside a single shell is not very important to a console user, who can simply switch to another TTY (terminal session accessible via hardware means) and run another shell, or open another instance of the graphical terminal app on a desktop session. However, imagine the user is connected via the ssh command to another system that does not have those multiple terminal capabilities but needs to accomplish several tasks inside their one connected shell session on that remote system.
+
+Such a user might need to run a command to monitor CPU usage, edit a configuration file, and possibly execute a command to initiate a system update. However, without special program assistance, they would only be able to do one at a time, or would have to use the jobs command method of putting each command into the background and having little more than the ability to switch between the jobs.
+
+There are a couple of options to accomplish true multiple terminal session productivity when limited to a single Bash shell connection on a system. We will focus on the screen and tmux commands, both of which allow the user to start processes in a session that can be detached while still running, then re-attached and managed by various methods.
+
+
+####################################################################################################################
+11.4.1 screen Command###############################################################################################
+The screen command also allows you to run commands and control the command’s environment from within a screen session. The screen command is the simpler, and much older of the two multi-session utilities previously mentioned. It is not as dynamic, but it is consistent and dependable; two traits that inspire true loyalty from system operators and system administrators.
+
+Normally, when using a terminal, running a process will cause the terminal to be occupied until that process finishes executing, is stopped or terminated, or is placed in the background. However, the screen command allows for multiple processes to run within separate sessions under a single terminal. This is possible because, by default, the screen command provides a new session with a shell in it where a command can be executed with the ability to detach from that session and return the shell to start new sessions.
+
+To start the screen command by itself, type the command at the prompt:
+
+sysadmin@localhost:~$ screen
+GNU Screen version 4.06.02 (GNU) 23-Oct-17
+
+Copyright (c) 2015-2017 Juergen Weigert, Alexander Naumov, Amadeusz Slawinski
+Copyright (c) 2010-2014 Juergen Weigert, Sadrul Habib Chowdhury
+Copyright (c) 2008-2009 Juergen Weigert, Michael Schroeder, Micah Cowan,
+Sadrul Habib Chowdhury
+Copyright (c) 1993-2007 Juergen Weigert, Michael Schroeder
+Copyright (c) 1987 Oliver Laumann
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program (see the file COPYING); if not, see http://www.gnu.org/licenses/,
+or contact Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+
+                  [Press Space for next page; Return to end.]
+To get rid of the message and return to the command line, press Enter. When the screen command returns to the command line, the user is in a screen session. This is an instance of the Bash shell that is contained by the screen command; like a container or box that you can use as a full Bash shell, only it is controlled by the screen command.
+
+sysadmin@localhost:~$                                            
+To verify that there is a screen session running, use the -list option to the screen command:
+
+sysadmin@localhost:~$ screen -list
+There is a screen on:
+        85.console.localhost   (03/30/19 14:33:05)     (Attached)
+1 Socket in /run/screen/S-sysadmin.
+Notice the text (Attached) in the output of the previous command, which indicates that the session is the one the user is currently attached to; in other words, the user is in that screen session.
+
+Note
+
+Typing the screen command inside an existing screen session does not start a new screen session.
+
+When using the screen command to run multiple commands in a single shell instance, it may be useful to create a session that monitors the system as well. The screen command can be used with commands that monitor system processes or system status, such as the top or ps commands. To demonstrate, run the top command in this screen session:
+
+sysadmin@localhost:~$ top
+top - 21:45:00 up 11 days, 23:28,  2 users,  load average: 0.33, 0.38, 0.34
+Tasks:  12 total,   1 running,  11 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.7 us,  1.4 sy,  0.0 ni, 97.9 id,  0.0 wa,  0.0 hi,  0.1 si,  0.0 st
+KiB Mem : 13201464+total, 10386072+free, 21642984 used,  6510928 buff/cache
+KiB Swap: 13419622+total, 13419622+free,        0 used. 10974582+avail Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+   25 bind      20   0  944924  39472   7148 S   3.6  0.0   0:00.59 named
+    9 syslog    20   0  191328   5820   3272 S   0.3  0.0   0:00.04 rsyslogd
+    1 root      20   0   18376   2976   2700 S   0.0  0.0   0:00.03 init
+   12 root      20   0   28356   2744   2476 S   0.0  0.0   0:00.00 cron
+   15 root      20   0   72296   3296   2548 S   0.0  0.0   0:00.00 sshd
+   44 root      20   0   78636   3636   3084 S   0.0  0.0   0:00.00 login
+   61 root      20   0  170204  32564  11760 S   0.0  0.0   0:01.69 check-new-+
+   62 sysadmin  20   0   19220   4116   2912 S   0.0  0.0   0:00.03 bash
+   81 sysadmin  20   0   28492   2624   2368 S   0.0  0.0   0:00.00 screen
+   82 sysadmin  20   0   28640   2900   2372 S   0.0  0.0   0:00.00 screen
+   83 sysadmin  20   0   19300   4172   2992 S   0.0  0.0   0:00.01 bash
+  100 sysadmin  20   0   38696   3192   2748 R   0.0  0.0   0:00.00 top
+A useful feature of the screen command is the ability to detach a session, then re-attach it later. While detached, the user returns to the prompt they were using before running the screen command and the processes running in the screen session will continue to run, even if the user is not able to see them in the terminal. To attach and detach a screen session, as well as perform other actions in the screen program, you will need to use the screen command keys.
+
+All screen commands start with a prefix key, the keystrokes Ctrl+A (denoted as C-a in the man pages) and then are followed by a single other character, or command key, to make an action happen.
+
+Note
+
+To view a list of the screen commands, type Ctrl+A and then a question mark ? while in a screen session:
+
+                       Screen key bindings, page 1 of 2.
+
+                       Command key:  ^A   Literal ^A:  a
+
+  break       ^B b         license     ,            removebuf   =
+  clear       C            lockscreen  ^X x         reset       Z
+  colon       :            log         H            screen      ^C c
+  copy        ^[ [         login       L            select      '
+  detach      ^D d         meta        a            silence     _
+  digraph     ^V           monitor     M            split       S
+  displays    *            next        ^@ ^N sp n   suspend     ^Z z
+  dumptermcap .            number      N            time        ^T t
+  fit         F            only        Q            title       A
+  flow        ^F f         other       ^A           vbell       ^G
+  focus       ^I           pow_break   B            version     v
+  hardcopy    h            pow_detach  D            width       W
+  help        ?            prev        ^H ^P p ^?   windows     ^W w
+  history     { }          quit        \            wrap        ^R r
+  info        i            readbuf     <            writebuf    >
+  kill        K k          redisplay   ^L l         xoff        ^S s
+  lastmsg     ^M m         remove      X            xon         ^Q q
+
+
+                  [Press Space for next page; Return to end.]
+Note
+
+No text will appear at the prompt when typing the screen command keys. Press Enter to return to the prompt within the screen session.
+
+In the next example, pressing the prefix key Ctrl+A gets the attention of the screen command, and then the command key D issues the detach command, which detaches the screen command from the current terminal and returns the user to the original shell prompt.
+
+For example, detach from the current screen session (and leave the top command running) by pressing the keystrokes:
+
+Ctrl+A
+D
+[detached from 85.console.localhost]
+sysadmin@localhost:~$
+In the example output above, a message appears stating the user has been detached from 85.console.localhost and the user will return to a Bash prompt. However, the user is still using the screen environment.
+
+The format of identification for a screen process is the following:
+
+PID.TTY.HOST
+The first set of characters PID indicates the PID of the process, TTY means the terminal type the process is running in, and HOST is the hostname, or process name if changed using the -S option. The Process ID in our virtual machine environment will likely be different than the one in the example.
+
+It is also possible to run a command at the shell prompt in a screen session and then immediately detach that session in order to continue conducting other operations at the prompt. For example, start the nano text editor in a screen session and detach it with the following command:
+
+sysadmin@localhost:~$ screen -S nano_edit -d -m nano
+The command above will start the nano text editor in a detached screen session named nano_edit and drop the user back to a shell prompt. The session is named using the session name -S option, which is followed by the desired session name as an argument. The -d -m option specifies to start the session in detached mode.
+
+Note
+
+In this instance, the -d -m option is considered to be a single option by the screen command, not two separate options.
+
+To see that there is an additional screen session, run the screen command with the -list option again:
+
+sysadmin@localhost:~$ screen -list
+There are screens on:
+        128.nano_edit   (03/31/19 18:39:24)     (Detached)
+        85.console.localhost   (03/31/19 18:18:43)     (Detached)
+2 Sockets in /run/screen/S-sysadmin.
+The output shows that there are two sessions running; one of which is named nano_edit. Once a session is started, a user cannot rename it in the screen -list command output, so it is recommended to name all screen sessions as they are created.
+
+The user can now re-attach to either of the sessions by using the resume -r option with either the PID of the session or by the name of the session. For example, the example below will re-attach the user to the session containing the top command:
+
+Note
+
+In order to execute this command, use the PID associated with the top command, which may differ from the PID in the example.
+
+sysadmin@localhost:~$ screen -r 85
+top - 21:49:24 up 11 days, 23:32,  2 users,  load average: 0.64, 0.40, 0.35
+Tasks:  13 total,   1 running,  12 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  1.9 us,  1.6 sy,  0.0 ni, 96.5 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+KiB Mem : 13201464+total, 10381150+free, 21690320 used,  6512812 buff/cache
+KiB Swap: 13419622+total, 13419622+free,        0 used. 10969848+avail Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+    1 root      20   0   18376   2976   2700 S   0.0  0.0   0:00.03 init
+    9 syslog    20   0  191328   5820   3272 S   0.0  0.0   0:00.04 rsyslogd
+   12 root      20   0   28356   2744   2476 S   0.0  0.0   0:00.00 cron
+   15 root      20   0   72296   3296   2548 S   0.0  0.0   0:00.00 sshd
+   25 bind      20   0 1077296  40844   7212 S   0.0  0.0   0:01.29 named
+   44 root      20   0   78636   3636   3084 S   0.0  0.0   0:00.00 login
+   62 sysadmin  20   0   19220   4116   2912 S   0.0  0.0   0:00.04 bash
+   82 sysadmin  20   0   28752   2940   2372 S   0.0  0.0   0:00.01 screen
+   83 sysadmin  20   0   19300   4172   2992 S   0.0  0.0   0:00.01 bash
+  100 sysadmin  20   0   38696   3192   2748 R   0.0  0.0   0:00.09 top
+  106 sysadmin  20   0   28624   2708   2384 S   0.0  0.0   0:00.00 screen
+  107 sysadmin  20   0   11800   2976   2176 S   0.0  0.0   0:00.01 nano
+  109 sysadmin  20   0   28492   2688   2432 S   0.0  0.0   0:00.00 screen
+To detach from the top command in the screen session and return to the shell, press Ctrl+A, then D:
+
+[detached from 106.console.localhost]
+sysadmin@localhost:~$
+At this point, the top command is running in a screen session, the nano editor is being used to run and possibly editing files in another session, and it is still possible to create more sessions as well as type commands at the shell.
+
+To get rid of a screen session, attach to each session, and quit the program that is running. For example, the nano session can be re-attached using the screen command below:
+
+sysadmin@localhost:~$ screen -r nano_edit
+Press Ctrl+X to exit the nano command and follow the prompts. When the nano process has exited, there will be no nano_edit screen session in the -list output:
+
+sysadmin@localhost:~$ screen -list
+There is a screen on:
+        85.console.localhost   (03/30/19 14:55:05)     (Attached)
+1 Socket in /run/screen/S-sysadmin.
+To exit the screen command, use the exit command:
+
+sysadmin@localhost:~$ exit
+[screen is terminating]                                                         
+sysadmin@localhost:~$
+Important
+
+Using the exit command more than once when exiting the screen command will result in being logged out of the current Bash shell and will open a new Bash shell.
+
+
+####################################################################################################################
+11.4.2 tmux Command###########################################################################
+
+The tmux command, short for terminal multiplexer, allows for multiple terminals to be opened and viewed on the same screen. Fundamentally, the tmux command is similar to the screen command, but layers on more visual aspects. For example, the tmux command includes a status bar at the bottom of the terminal the user is running tmux in that shows various items of information.
+
+To start using the tmux command, execute the command at the prompt:
+
+sysadmin@localhost:~$ tmux
+The shell session will appear, showing the usual green last-row indicator bar, which contains session and other information about the tmux command.
+
+sysadmin@localhost:~$
+
+
+
+
+
+
+
+
+
+
+[0] 0:bash*                                        "localhost" 05:24 01-Apr-19
+It is now possible to run a command in the current tmux session. For example, run the top command in the current session:
+
+sysadmin@localhost:~$ top
+top - 23:06:02 up 15 days, 45 min,  2 users,  load average: 2.86, 2.73, 2.18
+Tasks:  11 total,   1 running,  10 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  6.2 us,  4.2 sy,  0.0 ni, 89.3 id,  0.1 wa,  0.0 hi,  0.2 si,  0.0 st
+KiB Mem : 13201464+total, 58008456 free, 29883988 used, 44122196 buff/cache
+KiB Swap: 13419622+total, 13419622+free,        0 used. 10150048+avail Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+    1 root      20   0   18376   3172   2900 S   0.0  0.0   0:00.07 init
+    9 syslog    20   0  191328   3772   3272 S   0.0  0.0   0:00.04 rsyslogd
+   12 root      20   0   28356   2756   2488 S   0.0  0.0   0:00.00 cron
+   15 root      20   0   72296   3244   2496 S   0.0  0.0   0:00.00 sshd
+   25 bind      20   0 1141792  39948   7088 S   0.0  0.0   0:01.05 named
+   44 root      20   0   78636   3708   3156 S   0.0  0.0   0:00.00 login
+   62 sysadmin  20   0   19220   4172   2968 S   0.0  0.0   0:00.04 bash
+   87 sysadmin  20   0   27096   3688   3100 S   0.0  0.0   0:00.11 tmux: serv+
+   88 sysadmin  20   0   19300   4196   2948 S   0.0  0.0   0:00.03 bash
+   97 sysadmin  20   0   38692   3120   2676 R   0.0  0.0   0:00.36 top
+  105 sysadmin  20   0   18460   2996   2676 S   0.0  0.0   0:00.00 tmux: clie+
+
+
+[0] 0:top*                                           "localhost" 23:05 03-Apr-19
+To detach from the running command, in this case, the top command, press Ctrl+B, then the D command key. The action should be executed as Ctrl and lowercase b at the same time, then release and press d. This will return the user to a shell session as well as indicate that the user is detached (from session 0) and is back at the shell prompt:
+
+[detached (from session 0)]]
+sysadmin@localhost:~$
+Similar to the screen command, the tmux command uses a prefix key, the combination of the Control key plus a letter key, in this case, the B key. The Ctrl+B key sequence prefixes all tmux in-session commands, similar to the prefix key Ctrl+A used by the screen command.
+
+Consider This
+
+To learn more about tmux in-session commands, refer to the man pages of the tmux command where you will find the commands explained in complete detail.
+
+sysadmin@localhost:~$ man man
+To find out what tmux sessions currently exist, use either of the commands below:
+
+tmux list-sessions
+tmux ls
+sysadmin@localhost:~$ tmux list-sessions
+0: 1 windows (created Wed Apr  3 22:49:41 2019) [80x23]
+sysadmin@localhost:~$ tmux ls
+0: 1 windows (created Wed Apr  3 22:49:41 2019) [80x23]
+To create a new tmux session and run a new command in it, use the tmux new-session command:
+
+sysadmin@localhost:~$ tmux new-session 'less /etc/passwd'
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
+systemd-network:x:101:102:systemd Network Management,,,:/run/systemd/netif:/usr/
+sbin/nologin
+/etc/passwd
+[1] 0:less*                                          "localhost" 23:10 03-Apr-19
+Then, to detach from the tmux session running the less command, press the Ctrl+B key sequence and then the D key, to be returned to the shell prompt again:
+
+[detached (from session 1)]
+sysadmin@localhost:~$
+Confirm that another session now exists with the tmux ls command:
+
+sysadmin@localhost:~$ tmux ls
+0: 1 windows (created Wed Apr  3 22:49:41 2019) [80x23]
+1: 1 windows (created Wed Apr  3 23:09:57 2019) [80x23]
+To re-attach to a running tmux session, such as session 0, use the tmux attach command with the target-session -t flag which specifies the session to act upon:
+
+Note
+
+The -t option used in this example is specific to the attach command, not the tmux command itself. For more information, consult the man page of the tmux command.
+
+sysadmin@localhost:~$ tmux attach -t 0
+top - 23:46:09 up 15 days,  1:25,  3 users,  load average: 2.86, 1.70, 1.42
+Tasks:  12 total,   1 running,  11 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  2.3 us,  2.7 sy,  0.0 ni, 95.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+KiB Mem : 13201464+total, 78182592 free, 30386524 used, 23445524 buff/cache
+KiB Swap: 13419622+total, 13419622+free,        0 used. 10099883+avail Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+    1 root      20   0   18376   3172   2900 S   0.0  0.0   0:00.07 init
+    9 syslog    20   0  191328   3772   3272 S   0.0  0.0   0:00.04 rsyslogd
+   12 root      20   0   28356   2756   2488 S   0.0  0.0   0:00.00 cron
+   15 root      20   0   72296   3244   2496 S   0.0  0.0   0:00.00 sshd
+   25 bind      20   0 1207588  40208   7088 S   0.0  0.0   0:01.57 named
+   44 root      20   0   78636   3708   3156 S   0.0  0.0   0:00.00 login
+   62 sysadmin  20   0   19220   4172   2968 S   0.0  0.0   0:00.04 bash
+   87 sysadmin  20   0   27096   3764   3164 S   0.0  0.0   0:00.42 tmux: serv+
+   88 sysadmin  20   0   19300   4196   2948 S   0.0  0.0   0:00.03 bash
+   97 sysadmin  20   0   38692   3120   2676 R   0.0  0.0   0:01.31 top
+  101 sysadmin  20   0    6912   1020    916 S   0.0  0.0   0:00.00 less
+  123 sysadmin  20   0   18460   3096   2776 S   0.0  0.0   0:00.00 tmux: clie+
+
+
+
+[0] 0:top*                                           "localhost" 23:46 03-Apr-19
+This will re-attach the user to the tmux session 0 and the top command will reappear on the screen.
+
+Another major difference between the tmux and screen commands is that the screen command only allows for the use of full terminal sessions. Whereas the tmux command allows sessions to be viewed in multiple on-screen windows. To enable two tmux sessions in side-by-side vertical windows, press Ctrl+B then the % key (Shift+5):
+
+Terminal showing a vertical split screen with the top command running on the left side of the screen and the sysadmin@localhost:~$ prompt on the right side of the screen.
+The new session can now be viewed along-side the first tmux session (session 0) running the top command. To run a process in the new session, simply type the command or process to run at the prompt. For example, to view the last five lines of the /etc/passwd file using the tail command in the new session:
+
+Terminal showing a vertical split screen with the top command running on the left side of the screen and the sysadmin@localhost:~$ prompt followed by the tail -n -5 /etc/passwd command and output on the right side of the screen.
+To create a new session in a horizontal window, type Ctrl+B and the “ key (Shift+’):
+
+Terminal showing a vertical split screen with the top command running on the left side of the screen and the sysadmin@localhost:~$ prompt followed by the tail -n -5 /etc/passwd command and output on the top right side of the screen. The right side of the screen is split horizontally and the bottom right portion is displaying the sysadmin@localhost:~$ prompt.
+Once again, the new session can be viewed along-side the other sessions. In the new session we will use the pgrep command to search for the less command running in the previously created tmux session (session 1):
+
+Terminal showing a vertical split screen with the top command running on the left side of the screen and the sysadmin@localhost:~$ prompt followed by the tail -n -5 /etc/passwd command and output on the top right side of the screen. The right side of the screen is split horizontally and the bottom right portion is displaying the sysadmin@localhost:~$ prompt followed by the pgrep -i less command and output.
+Notice in the example above, the PID in the output of the pgrep command (101) matches a PID in the top command running in the vertical window on the left-hand side of the terminal. To exit out of a window, use the exit command. Use the exit command in the two windows on the right-hand side of the terminal until only the top command remains:
+
+Animation shows the exit command being typed at the prompt in the bottom right session which quits the session and only the two previous sessions remain on the left and right. The exit command is then typed into the session on the right which quits that session and only the first session running the top command remains as a full screen.
+It is now possible to quit the top command by pressing the Q key.
+
+To leave the tmux session and go back to the shell prompt, use the exit command:
+
+Output Omitted...
+
+sysadmin@localhost:~$ exit
+[0] 0:bash*                                          "localhost" 23:46 03-Apr-19
+The other tmux session is still active, which can be confirmed with the tmux ls command again:
+
+sysadmin@localhost:~$ tmux ls
+1: 1 windows (created Wed Apr  3 23:09:57 2019) [80x23]
+sysadmin@localhost:~$
+To kill the other session without returning to it (which should be used carefully, so as not to corrupt any data), use the following command with the target-session -t flag and the number of the session to be killed:
+
+tmux kill-session
+sysadmin@localhost:~$ tmux kill-session -t 1
+The session or window indicator numeral should correspond to the session or window that is desired to be ended; in this case it is the indicator numeral 1.
+
+To verify that there are no longer any tmux sessions running, use the tmux ls command:
+
+sysadmin@localhost:~$ tmux ls
+no server running on /tmp/tmux-1001/default
+sysadmin@localhost:~$
+Although it is beyond the scope of this course, the tmux command can be almost infinitely modified to execute more complex and interesting actions.
