@@ -1,0 +1,257 @@
+10.2 Standard Output
+When a command executes without any errors, the output that is produced is known as standard out, also called stdout or STDOUT. By default, this output will be sent to the terminal where the command is being executed.
+
+It is possible to redirect standard out from a command so it will go to a file instead of the terminal. Standard output redirection is achieved by following a command with the greater-than > character and a destination file. For example, the ls ~ command will list the files in the home directory. To save a list of the files in the home directory, you must direct the output into a text file. To create the /tmp/home.txt file:
+
+sysadmin@localhost:~$ ls ~ > /tmp/home.txt
+After which, the home.txt file will resemble:
+
+sysadmin@localhost:~$ cat /tmp/home.txt
+Desktop
+Documents
+Downloads
+Music
+Pictures
+Public‌
+Templates
+Videos
+Redirecting output using a single greater-than > character will create a new file, or overwrite the contents of an existing file with the same name. Redirecting standard output with two greater-than >> characters will also create a new file if it does not exist. The difference is that when using the >> characters, the output of the command will be appended to the end of a file if it does already exist. For example, to append to the file that was created by the previous command, execute the following:
+
+sysadmin@localhost:~$ date >> /tmp/home.txt
+Which will update the home.txt file to:
+
+sysadmin@localhost:~$ cat /tmp/home.txt
+Desktop
+Documents
+Downloads
+Music
+Pictures
+Templates
+Videos
+Thu Oct  2 17:36:02 UTC 2020
+There is a number associated with the standard output file descriptor (the > character): the number 1 (one). However, since standard output is the most commonly redirected command output, the number can be omitted. Technically, the commands should be executed as shown below:
+
+sysadmin@localhost:~$ ls 1> /tmp/ls.txt
+sysadmin@localhost:~$ date 1>> /tmp/ls.txt
+COMMAND > FILE
+COMMAND 1> FILE
+Create or overwrite FILE with the standard output of COMMAND
+COMMAND >> FILE
+COMMAND 1>> FILE
+Create or append to FILE with the standard output of COMMAND
+
+10.3 Standard Error
+When a command encounters an error, it will produce output that is known as standard error, also called stderr or STDERR. Like standard out, the standard error output is normally sent to the same terminal where the command is currently being executed. The number associated with the standard error file descriptor is 2 (two).
+
+If you tried to execute the ls /junk command, then the command would produce standard error messages because the /junk directory does not exist.
+
+sysadmin@localhost:~$ ls /junk
+ls: cannot access /junk: No such file or directory
+Because this output goes to standard error, the greater-than > character alone will not successfully redirect it, and the output of the command will still be sent to the terminal:
+
+sysadmin@localhost:~$ ls /junk > output
+ls: cannot access /junk: No such file or directory
+To redirect these error messages, you must use the correct file descriptor, which for standard error is the number 2. Execute the following, and the error will be redirected into the /tmp/ls.err file:
+
+sysadmin@localhost:~$ ls /junk 2> /tmp/ls.err
+Just like standard output, the use of a single > character for redirection will either create the file if it doesn’t exist or clobber (overwrite) an existing file's contents. To prevent clobbering an existing file when redirecting standard error, use the double >> characters after the number 2 to append instead:
+
+sysadmin@localhost:~$ ls /junk 2>> /tmp/ls.err
+The /tmp/ls.err file now contains the redirected error messages:
+
+sysadmin@localhost:~$ cat /tmp/ls.err
+ls: cannot access '/junk': No such file or directory
+ls: cannot access '/junk': No such file or directory
+COMMAND 2> FILE
+Create or overwrite FILE with the standard error of COMMAND
+COMMAND 2>> FILE
+Create or append to FILE with the standard error of COMMAND
+Some commands will produce both stdout and stderr output:
+
+sysadmin@localhost:~$ find /etc -name passwd
+/etc/pam.d/passwd
+/etc/passwd
+find: '/etc/ssl/private': Permission denied
+These two different outputs can be redirected into two separate files by using the following syntax:
+
+sysadmin@localhost:~$ find /etc -name passwd > /tmp/output.txt 2> /tmp/error.txt
+The cat command can be used to verify the success of the redirection above:
+
+sysadmin@localhost:~$ cat /tmp/output.txt
+/etc/pam.d/passwd
+/etc/passwd
+sysadmin@localhost:~$ cat /tmp/error.txt
+find: '/etc/ssl/private': Permission denied
+Sometimes it isn't useful to have the error messages displayed in the terminal or stored in a file. To discard these error messages, use the /dev/null file.
+
+The /dev/null file is like a trash can, where anything sent to it disappears from the system; it's sometimes called the bit bucket or black hole. Any type of output can be redirected to the /dev/null file; most commonly users will redirect standard error to this file, rather than standard output.
+
+The syntax to use the /dev/null file is the same as it is for redirecting to a regular file:
+
+sysadmin@localhost:~$ find /etc -name passw 2> /dev/null
+/etc/pam.d/passwd
+/etc/passwd
+What if you wanted all output (standard error and standard out) sent to one file? There are two techniques to redirect both standard error and standard out:
+
+sysadmin@localhost:~$ ls > /tmp/ls.all 2>&1
+sysadmin@localhost:~$ ls &> /tmp/ls.all  
+Both of the preceding command lines will create a file called /tmp/ls.all that contains all standard out and standard error. The first command redirects stdout to /tmp/ls.all and the 2>&1 expression means "send stderr wherever stdout is going". In the second example, the &> expression means "redirect all output".
+
+A similar technique can be used to append all output to a single file:
+
+sysadmin@localhost:~$ ls /etc/au* >> /tmp/ls.all 2>&1
+sysadmin@localhost:~$ ls /etc/au* &>> /tmp/ls.all
+COMMAND &> FILE
+COMMAND > FILE 2>&1
+Create or overwrite FILE with all output (stdout, stderr) of COMMAND
+COMMAND &>> FILE
+COMMAND >> FILE 2>&1
+Create or append to FILE with all output (stdout, stderr) of COMMAND
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.
+

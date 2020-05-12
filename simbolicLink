@@ -1,0 +1,22 @@
+#To create a simbolic link
+#ln command -s option and path to the link
+ln -s /etc/passwd mysylink
+
+#To read simboliclink
+readLink simbolicLinkName
+
+#To creat a recursive simblink 
+#(a simboliclink that represents another simboliclink)
+#command opt destination nameOfSimbolicLink
+ln -s mysylink anotherSimLink
+readlink anotherSimbLink
+readlink -f anotherSimbLink
+
+#Find if there area simbolic links in the current directory
+find . -type l
+
+#When we use ll it show at the first character what type of file 
+#is each result, the once with l meaning that they are simlink
+
+#Delete simbolicLinks
+unlink simblinkName
