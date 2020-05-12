@@ -1,0 +1,628 @@
+##########################################################################################################################################
+12.1 Introduction
+
+File archiving is used when one or more files need to be transmitted or stored as efficiently as possible. There are two fundamental aspects which this chapter explores:
+
+Archiving: Combines multiple files into one, which eliminates the overhead in individual files and makes it easier to transmit.
+Compression: Makes the files smaller by removing redundant information.
+When an archive is decompressed, and one or more files are extracted, this is called un-archiving.
+
+More sophisticated types of copying, using the dd and cpio commands, will also be covered. These commands, while more complex, offer powerful features.
+
+
+##########################################################################################################################################
+12.2 The gzip and gunzip Commands
+Compression reduces the amount of data needed to store or transmit a file while storing it in such a way that the file can be restored. A file with human-readable text might have frequently used words replaced by something smaller, or an image with a solid background might represent patches of that color by a code. The compressed version of the file is not typically viewed or utilized; instead, it is uncompressed before use.
+
+The gzip command is used to create a compressed file. Likewise, the gunzip command is used to view the contents of a compressed file, as well as extract those contents.
+
+gzip [OPTION]... [FILE]...
+gunzip [OPTION]... [FILE]...
+
+Important
+
+The gzip command should be used with caution since its default behavior is to replace the original file specified with a compressed version.
+
+In the following example, the red.txt file is replaced with the compressed red.txt.gz file after using the gzip command:
+
+sysadmin@localhost:~$ cd Documents/
+sysadmin@localhost:~/Documents$ ls red*
+red.txt
+sysadmin@localhost:~/Documents$ gzip red.txt
+sysadmin@localhost:~/Documents$ ls red*
+red.txt.gz
+To avoid replacing the original version of a file when using the gzip command, use the -c option. This causes the gzip command to send the compressed data to standard output, and given that the output of the gzip command is binary data, it will need to be redirected into a file. Capture the output of the gzip command and redirect it into a file, using the greater-than > character:
+
+sysadmin@localhost:~/Documents$ gzip -c numbers.txt > numbers.txt.gz
+sysadmin@localhost:~/Documents$ ls numbers*
+numbers.txt  numbers.txt.gz 
+Using the gzip command with the -c option and redirection created a gzipped file while leaving the original file intact. This can be useful as the gzipped file can be moved to an archive directory location while preserving the original file in its original location.
+
+The gunzip command reverses what gzip does, so files will be uncompressed, and the gzipped file will be replaced with the uncompressed file:
+
+sysadmin@localhost:~/Documents$ gunzip red.txt
+sysadmin@localhost:~/Documents$ ls red*
+red.txt
+To list the amount of compression of an existing file, use the -l option with the gunzip command:
+
+sysadmin@localhost:~/Documents$ gunzip -l numbers.txt.gz
+         compressed        uncompressed  ratio uncompressed_name
+                 42                  10 -20.0% numbers.txt
+Consider This
+
+The gunzip command is just a script that calls gzip with different parameters.
+
+While the gzip command supports recursion with the -r option, by default, it attempts to replace the original file with the gzipped file. This leads to errors when the files being compressed are not owned by the user that tries to gzip them:
+
+sysadmin@localhost:~/Documents$ gzip -r /run
+gzip: /run/mount/utab.gz: Permission denied
+gzip: /run/utmp.gz: Permission denied
+gzip: /run/sshd.pid.gz: Permission denied
+gzip: /run/crond.pid.gz: Permission denied
+gzip: /run/named/session.key: Permission denied
+gzip: /run/named/named.pid.gz: Permission denied
+gzip: /run/motd.dynamic.gz: Permission denied
+gzip: /run/crond.reboot: Permission denied
+gzip: /run/rsyslogd.pid.gz: Permission denied
+gzip: /run/systemd/container.gz: Permission denied
+gzip: /run/systemd/resolve/stub-resolv.conf.gz: Permission denied
+gzip: /run/shm: Too many levels of symbolic links
+gzip: /run/initctl: Too many levels of symbolic links
+gzip: /run/init.upgraded.gz: Permission denied
+In order to be able to compress files with the gzip command recursively, a user needs to have the correct permissions on the directories the files are in. Typically, this is limited to directories within the user's own home directory.
+
+For example, using the gzip command recursively on the ~/example directory, it would be successful in replacing regular files with gzip archive files:
+
+sysadmin@localhost:~/Documents$ cd
+sysadmin@localhost:~$ mkdir example
+sysadmin@localhost:~$ touch example/one example/two example/three
+sysadmin@localhost:~$ ls example/
+one  three  two
+sysadmin@localhost:~$ gzip -r example
+sysadmin@localhost:~$ ls example/
+one.gz  three.gz  two.gz
+The gunzip command can also work recursively, assuming the user has the correct permissions. As it works, it removes the .gz extension from each file:
+
+sysadmin@localhost:~$ gunzip -r example/
+sysadmin@localhost:~$ ls example/
+one  three  two
+Note
+
+Permissions can have an impact on file management commands, such as the gzip and gunzip commands. To gzip or gunzip a file within a directory, a user must have the write and execute permissions on a directory as well as the read permission on the file. Regular users typically only have this type of permission in their home directory and its subdirectories.
+
+The ls command can be used to view the permissions of a directory prior to compressing files. For example, to view the permissions of the /run directory, use the ls command with the -l and -d options:
+
+sysadmin@localhost:~$ ls -ld /run
+drwxr-xr-x 1 root root 4096 Mar 26 21:22 /run
+The output above shows that the /run directory is owned by the user root and the group root. The permissions for others are read and execute, but not write:
+
+drwxr-xr-x 1 root root 4096 Mar 26  21:22 /run
+The absence of the write permission for all users aside from the root user prevents regular users from compressing files within this directory.
+
+Permissions will be covered in greater detail later in the course.
+
+
+
+##########################################################################################################################################
+12.3 The zcat Command
+The zcat command is used to display the contents of a compressed file without actually uncompressing it. It does this by expanding the file contents to standard output rather than creating a new uncompressed file from a compressed archive created by the tar or gzip commands. Its effect is identical to running the gzip -c command:
+
+zcat [OPTION]... [FILE]...
+First, create a compressed file with the gzip command, then view its contents with the zcat command:
+
+sysadmin@localhost:~$ cd Documents
+sysadmin@localhost:~/Documents$ gzip red.txt
+sysadmin@localhost:~/Documents$ ls
+School            alpha-third.txt  hidden.txt    numbers.txt  spelling.txt
+Work              alpha.txt        letters.txt   os.csv       words
+adjectives.txt    animals.txt      linux.txt     people.csv
+alpha-first.txt   food.txt         longfile.txt  profile.txt
+alpha-second.txt  hello.sh         newhome.txt   red.txt.gz
+sysadmin@localhost:~/Documents$ zcat red.txt.gz
+red
+reef
+rot
+reeed
+rd
+rod
+roof
+reed
+root
+reel
+read
+The zcat command can also be used to view the contents of multiple compressed files:
+
+sysadmin@localhost:~/Documents$ gzip letters.txt
+sysadmin@localhost:~/Documents$ zcat red.txt.gz letters.txt.gz
+red
+reef
+rot
+reeed
+rd
+rod
+roof
+reed
+root
+reel
+read                                                                            
+a
+b
+c
+d
+e
+Using the -f option with the zcat command will enable viewing of normal uncompressed files:
+
+sysadmin@localhost:~/Documents$ zcat -f newhome.txt
+Thanks for purchasing your new home!!
+
+**Warning** it may be haunted.
+
+There are three bathrooms.
+
+**Beware** of the ghost in the bedroom.
+
+The kitchen is open for entertaining.
+
+**Caution** the spirits don't like guests.
+
+Good luck!!!
+File properties can be displayed with the -l option:
+
+sysadmin@localhost:~/Documents$ zcat -l red.txt.gz
+         compressed        uncompressed  ratio uncompressed_name
+                 60                  51  33.3% red.txt
+
+##########################################################################################################################################
+12.4 The bzip2 and bunzip2 Commands
+The bzip2 and bunzip2 commands work in a nearly identical fashion to the gzip and gunzip commands. However, while the gzip command uses the Lempel-Ziv data compression algorithm, the bzip utilities use a different compression algorithm called Burrows-Wheeler block sorting, that can compress files smaller than gzip at the expense of more CPU time. These files can be recognized because they have a .bz or .bz2 extension instead of a .gz extension.
+
+bzip2 [OPTION]... [FILE]...
+bunzip2 [OPTION]... [FILE]...
+
+When a new compressed file is created from an existing file with the bzip2 command, the .bz2 extension is added to the file name. Using the verbose -v option will cause bzip2 to report the compression ratio after it has finished. The gzip command also supports the -v option, so a file can be compressed using both commands and the compression ratio compared to determine which command uses a better compression technique for that specific file.
+
+sysadmin@localhost:~/Documents$ cd
+sysadmin@localhost:~$ ls example/
+one  three  two
+sysadmin@localhost:~$ bzip2 -v example/*
+  example/one:    no data compressed.
+  example/three:  no data compressed.
+  example/two:    no data compressed.
+sysadmin@localhost:~$ ls example/
+one.bz2  three.bz2  two.bz2
+Important
+
+The bzip2 command should be used with caution since its default behavior is to replace the original file specified with a compressed version.
+
+Note that there was no data to compress in the empty one, two, and three files.
+
+One way to demonstrate the difference in compression between gzip and bzip2 is to compress the same file using both commands with the verbose -v option. The -v option gives a verbose output so you can see how the file was processed:
+
+sysadmin@localhost:~/Documents$ ls -l words
+-rw-r--r-- 1 sysadmin sysadmin 971578 Apr 24 16:24 words
+sysadmin@localhost:~/Documents$ gzip -v words
+words:   73.2% -- replaced with words.gz
+sysadmin@localhost:~/Documents$ ls -l words.gz
+-rw-r--r-- 1 sysadmin sysadmin 259983 Apr 24 16:24 words.gz
+sysadmin@localhost:~/Documents$ gunzip words.gz
+sysadmin@localhost:~/Documents$ bzip2 -v words
+  words:    2.812:1,  2.845 bits/byte, 64.43% saved, 971578 in, 345560 out.
+sysadmin@localhost:~/Documents$ ls -l words.bz2
+-rw-r--r-- 1 sysadmin sysadmin 345560 Apr 24 16:24 words.bz2
+sysadmin@localhost:~/Documents$ bunzip words.bz2
+Just like gunzip, the bunzip2 command uncompresses the file and removes the .bz2 extension. For example, the command below will uncompress the example directory and its contents previously compressed using the bunzip2 command:
+
+sysadmin@localhost:~$ bunzip2 -v example/*
+  example/one.bz2:   done
+  example/three.bz2: done
+  example/two.bz2:   done
+sysadmin@localhost:~$ ls example/
+one  three  two
+The bzip2 command doesn't have an option -r to do recursion, so a wildcard can be used to match multiple files, as demonstrated in the examples above. The bzip2 command does have the -c option available to send the data to standard output, so it can be redirected to a new file:
+
+sysadmin@localhost:~$ cd Documents
+sysadmin@localhost:~/Documents$ bzip2 -cv alpha.txt > alpha.txt.bz2
+  alpha.txt:  1.781:1,  4.492 bits/byte, 43.85% saved, 390 in, 219 out.
+sysadmin@localhost:~/Documents$ ls -l alpha.*
+-rw-r--r-- 1 sysadmin sysadmin 390 Apr 24 16:24 alpha.txt
+-rw-rw-r-- 1 sysadmin sysadmin 219 May  9 18:07 alpha.txt.bz2
+
+
+##########################################################################################################################################
+12.5 The bzcat Command
+The bzcat command prints the content of specified files compressed with the bzip2 command to the standard output.
+
+bzcat [OPTION]... [FILE]...
+In the example below, the bzip2 command is used to compress the profile.txt file, and the bzcat command is used to view the compressed file:
+
+sysadmin@localhost:~/Documents$ bzip2 profile.txt
+sysadmin@localhost:~/Documents$ bzcat profile.txt.bz2
+Hello my name is Joe.
+I am 37 years old.
+3121991
+My favorite food is avocados.
+I have 2 dogs.
+123456789101112
+
+
+##########################################################################################################################################
+12.6 The xz and unxz Commands
+Another archival tool similar to gzip and bzip2 is the xz command.
+
+xz [OPTION]... [FILE]...
+To compress a group of files individually, use the xz command with the -z option. Compression is the default operation mode, and therefore if the xz command is run with no options, the -z option is implied.
+
+In the example below, the glob asterisk * character is used to compress all files, with the exception of directories, in the current directory:
+
+sysadmin@localhost:~/Documents$ xz -z *
+xz: School: Is a directory, skipping
+xz: Work: Is a directory, skipping
+xz: words.xz: Cannot set the file group: Operation not permitted
+sysadmin@localhost:~/Documents$ ls
+School               alpha.txt.xz       longfile.txt.xz     red.txt.bz.xz
+Work                 animals.txt.xz     newhome.txt.xz      red.txt.gz.xz
+adjectives.txt.xz    food.txt.xz        numbers.txt.gz.xz   spelling.txt.xz
+alpha-first.txt.xz   hello.sh.xz        numbers.txt.xz      words.xz
+alpha-second.txt.xz  hidden.txt.xz      os.csv.xz
+alpha-third.txt.xz   letters.txt.gz.xz  people.csv.xz
+alpha.txt.bz2.xz     linux.txt.xz       profile.txt.bz2.xz
+The -d option can be used with the xz command to uncompress the files just as easily:
+
+sysadmin@localhost:~/Documents$ xz -d *
+sysadmin@localhost:~/Documents$ ls
+School            alpha-third.txt  hidden.txt    numbers.txt  spelling.txt
+Work              alpha.txt        letters.txt   os.csv       words
+adjectives.txt    animals.txt      linux.txt     people.csv
+alpha-first.txt   food.txt         longfile.txt  profile.txt
+alpha-second.txt  hello.sh         newhome.txt   red.txt
+Another method of uncompressing files compressed using the xz command is to use the unxz command. Using unxz to uncompress a file is very similar to using gunzip because it uses similar syntax. When a file is uncompressed using the unxz command, the extension .xz is removed. To demonstrate, the xz command is used to compress a copy of the words file:
+
+sysadmin@localhost:~/Documents$ xz words
+sysadmin@localhost:~/Documents$ ls -l words.xz
+-rw-r--r-- 1 sysadmin sysadmin 198756 Dec  9 23:35 words.xz
+Next, the unxz command is used to uncompress the words.xz file:
+
+sysadmin@localhost:~/Documents$ unxz words.xz
+sysadmin@localhost:~/Documents$ ls -l words
+-rw-r--r-- 1 sysadmin sysadmin 971578 Dec  9 23:35 words
+There are a huge number of options for the xz command, some relating to the compression ratio. Keep in mind when using xz that the more aggressive the compression, the harder the processor will have to work.
+
+
+##########################################################################################################################################
+12.7 The xzcat Command
+The xzcat command is used to print the contents of files compressed with the xz command to standard output on the terminal without uncompressing the target file.
+
+xzcat [FILE]...
+In the following example, the xz command is used to compress the animals.txt file, and then the xzcat command is used to view the file:
+
+sysadmin@localhost:~/Documents$ xz animals.txt
+sysadmin@localhost:~/Documents$ ls
+School            alpha-third.txt  hidden.txt      numbers.txt   words
+Work              alpha.txt        letters.txt.gz  os.csv
+adjectives.txt    animals.txt.xz   linux.txt       people.csv
+alpha-first.txt   food.txt         longfile.txt    red.txt.gz
+alpha-second.txt  hello.sh         newhome.txt     spelling.txt
+sysadmin@localhost:~/Documents$ xzcat animals.txt.xz
+1 retriever
+2 badger
+3 bat
+4 wolf
+5 eagle
+As demonstrated in the output above, when a new compressed file is created, the .xz extension is added to the file name.
+
+
+##########################################################################################################################################
+12.8 The tar Command
+An archive is a single file, which consists of many files, though not necessarily compressed. The tar command is typically used to make archives within Linux. These tar archive files, sometimes called tarballs, were originally used to backup data onto magnetic tape. Tar is derived from the words "tape archive".
+
+
+While the primary purpose of the tar command is to merge multiple files into a single file, it is capable of many different operations, and there are numerous options. The functionality of the tar command can be broken down into three basic functions: creating, viewing, and extracting archives.
+
+Create: Make a new archive out of a series of files.
+Extract: Pull one or more files out of an archive.
+List: Show the contents of the archive without extracting.
+The tar command accepts all three styles of options, (x -x --extract) as parameters. Do not be surprised to see it used with options that have no hyphens (BSD style), a single hyphen (UNIX style) or two hyphens (GNU style).
+
+Create Mode
+tar -c [-f ARCHIVE] [OPTIONS] [FILE...]
+Creating an archive with the tar command requires two named options:
+
+-c	Create an archive.
+-f ARCHIVE	Use the ARCHIVE file. The argument ARCHIVE will be the name of the resulting archive file.
+All the remaining arguments, [FILE…], are considered as input file names either as a list of files, as a wildcard, or both.
+
+To create an archive of the Documents directory, use the create -c option and file -f option to specify a new file, followed by the directory to archive. Note that the -f option must be specified last since it is indicating a file name:
+
+sysadmin@localhost:~$ tar -cf mydocuments.tar ~/Documents
+tar: Removing leading `/' from member names
+sysadmin@localhost:~$ ls
+Desktop    Downloads  Pictures  Templates  mydocuments.tar
+Documents  Music      Public    Videos
+The verbose -v option will cause the tar command to display the files that are being included in the archive. If compression is going to be used, then the appropriate option needs to be specified. For the gzip command, the -z option needs to be added.
+
+-v	Verbosely list the files processed.
+-z	Compress (or decompress) the archive using the gzip command.
+File extensions are not relevant to Linux; however, it is customary to add .tar.gz to the name of the compressed archive. The next example shows the same command as the prior example, but with the addition of the .gz extension to the original file name and the -z and -v options:
+
+sysadmin@localhost:~$ tar -cvzf mydocuments.tar.gz ~/Documents
+tar: Removing leading `/' from member names
+/home/sysadmin/Documents/
+/home/sysadmin/Documents/animals.txt
+/home/sysadmin/Documents/alpha-third.txt
+/home/sysadmin/Documents/longfile.txt
+/home/sysadmin/Documents/red.txt
+/home/sysadmin/Documents/alpha.txt
+/home/sysadmin/Documents/hidden.txt
+/home/sysadmin/Documents/food.txt
+/home/sysadmin/Documents/adjectives.txt
+/home/sysadmin/Documents/spelling.txt
+/home/sysadmin/Documents/os.csv
+/home/sysadmin/Documents/letters.txt
+Output Omitted...
+sysadmin@localhost:~$ ls
+Desktop    Downloads  Pictures  Templates  mydocuments.tar
+Documents  Music      Public    Videos     mydocuments.tar.gz
+It is often preferable to archive files before zipping them in any format, whether bzip, gzip, or xz. The following example archives the test directory using the tar command before compressing it with the xz command:
+
+sysadmin@localhost:~$ mkdir test
+sysadmin@localhost:~$ tar -cf testdirectory.tar test
+sysadmin@localhost:~$ ls
+Desktop    Music     Templates             mydocuments.tar
+Documents  Pictures  Videos                test
+Downloads  Public    mydocuments.tar.gz  testdirectory.tar
+sysadmin@localhost:~$ xz -z testdirectory.tar
+sysadmin@localhost:~$ ls
+Desktop    Music     Templates             mydocuments.tar
+Documents  Pictures  Videos                test
+Downloads  Public    mydocuments.tar.gz    testdirectory.tar.xz
+The tar command originally did not support compression, but a newer version that was developed by the GNU project supports gzip, bzip2, and xz compression. To compress (or decompress) an archive with the tar command, choose the appropriate option:
+
+-z	Filter the archive through the gzip command.
+-j	Filter the archive through the bzip2 command.
+-J	Filter the archive through the xz command.
+If a version of the tar command does not support these compression utilities, the commands can be used separately on the tar file.
+
+Remove the testdirectory.tar.xz file created in the previous example. Then, to compress the test directory once again using the xz compression directly with the tar command, use the -J option:
+
+sysadmin@localhost:~$ rm *.xz
+sysadmin@localhost:~$ ls
+Desktop    Downloads  Pictures  Templates  mydocuments.tar.gz  test
+Documents  Music      Public    Videos     mydocuments.tar
+sysadmin@localhost:~$ tar -cJf testdirectory.tar.xz test
+sysadmin@localhost:~$ ls
+Desktop    Music     Templates             mydocuments.tar
+Documents  Pictures  Videos                test
+Downloads  Public    mydocuments.tar.gz    testdirectory.tar.xz
+List Mode
+tar -t [-f ARCHIVE] [OPTIONS]
+Use the -t option to the tar command to view a list (table of contents) of a tar file.
+
+-t	List the files in the archive.
+-f ARCHIVE	Operate on the given archive.
+Even if the archive file is compressed, the correct compression option does not need to be specified to view a tar archive file. Only the file -f option and the list -t option are required to view the table of contents. Once again, note that the -f option is used last so that the file name can be specified as an argument to this option:
+
+sysadmin@localhost:~$ tar -tf mydocuments.tar.gz
+home/sysadmin/Documents/
+home/sysadmin/Documents/animals.txt
+home/sysadmin/Documents/alpha-third.txt
+home/sysadmin/Documents/longfile.txt
+home/sysadmin/Documents/red.txt
+home/sysadmin/Documents/alpha.txt
+home/sysadmin/Documents/hidden.txt
+home/sysadmin/Documents/food.txt
+home/sysadmin/Documents/adjectives.txt
+home/sysadmin/Documents/spelling.txt
+home/sysadmin/Documents/os.csv
+home/sysadmin/Documents/letters.txt
+Output Omitted...
+To view the table of contents of the archive in a format similar to a long listing (like the ls -l command), add the verbose -v option:
+
+sysadmin@localhost:~$ tar -vtf mydocuments.tar.gz
+-drwxr-xr-x sysadmin/sysadmin 0 2019-04-24 16:24 home/sysadmin/Documents/
+-rw-r--r-- sysadmin/sysadmin 42 2019-04-24 16:24 home/sysadmin/Documents/animals.txt
+-rw-r--r-- sysadmin/sysadmin 195 2019-04-24 16:24 home/sysadmin/Documents/alpha-third.txt
+-rw-r--r-- sysadmin/sysadmin 66540 2019-04-24 16:24 home/sysadmin/Documents/longfile.txt
+-rw-r--r-- sysadmin/sysadmin    51 2019-04-24 16:24 home/sysadmin/Documents/red.txt
+-rw-r--r-- sysadmin/sysadmin   390 2019-04-24 16:24 home/sysadmin/Documents/alpha.txt
+-rw-r--r-- sysadmin/sysadmin    67 2019-04-24 16:24 home/sysadmin/Documents/hidden.txt
+-rw-r--r-- sysadmin/sysadmin    14 2019-04-24 16:24 home/sysadmin/Documents/food.txt
+Output Omitted...
+Extract Mode
+tar -x [-f ARCHIVE] [OPTIONS]
+To extract the files from the tar file, use the -x option.
+
+-x	Extract files from an archive.
+-f ARCHIVE	Operate on the given archive.
+If a version of the tar command does not support these compression utilities, the commands can still be used separately on the tar file.
+
+
+##########################################################################################################################################
+12.9 The zip and unzip Commands
+Of the many commands available in Linux that take multiple files and combine them into one, the zip command might be most familiar. The functionality of zip compressed file management has been available in the personal computing world prior to Windows and is now included within the file management graphical utilities found within Microsoft's Windows and Apple's MacOS.
+
+
+The zip command is very useful for creating archives that can easily be shared across multiple operating systems. The basic form of a zip command is:
+
+zip [OPTIONS]... [FILE]...
+The destination file will automatically have a .zip extension added to it if an extension is not specified. Also, the original files will not be replaced.
+
+sysadmin@localhost:~/Documents$ cd
+sysadmin@localhost:~$ zip ./example/package ./example/*
+  adding: example/one (stored 0%)
+  adding: example/three (stored 0%)
+  adding: example/two (stored 0%)
+sysadmin@localhost:~$ ls ./example/
+one  package.zip  three  two
+One especially useful option for the zip command is the -r option, which allows the zip command to recursively compress multiple directories into a single file. For example, to back up the files stored in the /var/log/apt directory, execute the following command:
+
+sysadmin@localhost:~$ zip -r ./example/logfiles /var/log/apt/
+  adding: var/log/apt/ (stored 0%)
+  adding: var/log/apt/eipp.log.xz (stored 0%)
+  adding: var/log/apt/history.log (deflated 77%)
+  adding: var/log/apt/term.log (deflated 91%)
+sysadmin@localhost:~$ ls ./example/
+logfiles.zip  one  package.zip  three  two
+Note
+
+The log files had been compressed using the gzip command prior to the use of the zip command.
+
+The unzip command is used to extract the files from the zip archive file. Use the unzip command without options to extract a zip archive:
+
+sysadmin@localhost:~$ cd ./example/
+sysadmin@localhost:~/example$ unzip ./logfiles.zip
+Archive:  ./logfiles.zip
+   creating: var/log/journal/
+   creating: var/log/apt/
+ extracting: var/log/apt/eipp.log.xz
+  inflating: var/log/apt/history.log
+  inflating: var/log/apt/term.log
+sysadmin@localhost:~/example$ ls ~/example/var/log/apt
+eipp.log.xz  history.log  term.log
+A new directory tree is created ~/example/var/log/apt that contains the files that were contained inside of the zip archive file.
+
+To view the contents of a zip file without unpacking it, use the unzip command with the list -l option:
+
+sysadmin@localhost:~/example$ unzip -l ./package.zip
+Archive:  ./package.zip
+        Archive:  ./package.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        0  2019-03-22 00:14   example/one
+        0  2019-03-22 00:14   example/three
+        0  2019-03-22 00:14   example/two
+---------                     -------
+        0                     3 files
+
+##########################################################################################################################################
+12.10 The cpio Command
+Another type of archive command that can merge many files into a single file is the cpio command. This command gets its name from two of its modes: copy-in mode and copy-out mode. The cpio command works with the original POSIX specification and should be available on all Linux and Unix systems. It is considered a legacy application, that although administrators need to be aware of it, most systems provide better alternatives for archiving directories.
+
+In copy-out mode, the cpio command will copy files from a directory into an archive. In copy-in mode, the cpio command will either list the archive file contents or copy files from an archive into a directory. It is easy to reverse these statements and get confused. Just remember that the archive is ”outside” of the operating system.
+
+There is a third mode called the copy-pass mode. In this mode, the cpio command copies files from one directory to another, which combines the copy-out and copy-in modes without creating an archive file.
+
+To create a new archive file, the cpio command will run in copy-out mode taking a list of files from standard input and producing a file stream that can be redirected into a new archive file. Standard input, in this case, refers to the keyboard input by default, but this input could also come from the output of other commands.
+
+Copy-Out Mode
+The -o option puts the cpio command into copy-out mode. Using the verbose -v option will cause the cpio command to list the files that it processes. So, to archive the current directory, execute the ls command, and then send a list of the files into the cpio command as input by using the pipe | character. The > character will capture the output of the cpio command and put it into a file):
+
+sysadmin@localhost:~$ ls | cpio -ov > archive.cpio
+Desktop
+Documents
+Downloads
+Music
+Pictures
+Public
+Templates
+Videos
+example
+1 block
+The find command is a good way to generate the list of files to be sent to the cpio command. The find command is automatically recursive, so it can be used to create a list of all files starting at a particular directory. For example, to archive the home directory and all of its subdirectories and files, execute the following command:
+
+sysadmin@localhost:~$ find . -depth -print | cpio -vo > /tmp/ar.cpio
+./Public
+./Downloads
+./Pictures
+./Videos
+./.selected_editor
+./.profile
+./.bash_logout
+./Templates
+./.bashrc
+./Desktop
+./Music
+./Documents/animals.txt
+./Documents/alpha-third.txt
+./Documents/longfile.txt
+./Documents/red.txt
+Output Omitted...
+The verbose -v option is used to show the activity of the cpio command in the terminal.
+
+Copy-In Mode
+To extract the files that are in a cpio archive, use the -i option with the cpio command to specify copy-in mode. By default, cpio will not overwrite existing files unless the -u option is used. The cpio command will not create directories unless the -d option is used.
+
+The cpio command also makes use of standard input to determine the name of the file that will be extracted from the archive. Therefore, to extract files and directories, as well as overwriting existing files, execute the following:
+
+sysadmin@localhost:~$ cpio -idv /tmp/test < /tmp/ar.cpio
+2048 blocks
+To specify the pass-through mode of the cpio command, specify the -p option. Again, if any directories are included, the -d option needs to be specified. To copy all the files from the home directory to a directory called /tmp/destination, use the following command line:
+
+sysadmin@localhost:~$ find ~ | cpio -pd /tmp/destination
+2044 blocks
+To prevent problems with files that have white space characters (like the spacebar character) embedded in them, specify the -print0 option to the find command. This causes the list of files to be separated by the null character, instead of a new line character, which allows for file names with spaces in them to be treated as a single file name (otherwise a file named hello there would be considered two files, one named hello and the other named there).
+
+For the cpio command to process the list of null separated files, add the --null option. This results in a more robust version of the previous pass-through command that looks like this:
+
+sysadmin@localhost:~$ find . -print0 | cpio --null -pvd /tmp/destination
+/tmp/destination/./.selected_editor
+/tmp/destination/./Videos
+/tmp/destination/./.bashrc
+/tmp/destination/./Documents
+/tmp/destination/./Documents/Work
+/tmp/destination/./Documents/Work/.emptydir
+/tmp/destination/./Documents/linux.txt
+/tmp/destination/./Documents/hello.sh
+/tmp/destination/./Documents/animals.txt
+/tmp/destination/./Documents/people.csv
+/tmp/destination/./Documents/profile.txt
+/tmp/destination/./Documents/alpha-first.txt
+/tmp/destination/./Documents/adjectives.txt
+/tmp/destination/./Documents/longfile.txt
+/tmp/destination/./Documents/os.csv
+/tmp/destination/./Documents/alpha.txt
+/tmp/destination/./Documents/alpha-third.txt
+/tmp/destination/./Documents/School
+Consider This
+
+To understand why the cpio command might be used for copying files from one directory to another instead of using the cp command recursively, consider the following advantages:
+
+The cpio command automatically preserves file attributes (metadata) like links, permissions, timestamps, and ownerships. These attributes are not preserved with using the cp command.
+The cpio command also works with special files better than the cp command.
+
+
+
+
+##########################################################################################################################################
+12.11 The dd Command
+The dd command is a utility for copying files or entire partitions at the bit level. This command has several useful features, including:
+
+It can be used to clone or delete (wipe) entire disks or partitions.
+It can be used to copy raw data to removable devices, such as USB drives and CDROMs.
+It can backup and restore the MBR (Master Boot Record), a critical software component that is used to boot the system.
+It can be used to create a file of a specific size that is filled with binary zeros, which can then be used as a swap file (virtual memory).
+The dd command uses special arguments to specify how it will work. The following illustrates some of the more commonly used arguments:
+
+if=FILE	The input file to be read.
+of=FILE	The output file to be written.
+bs=SIZE	The block size to be used. By default, the value is considered to be in bytes. Use the following suffixes to specify other units: K, M, G, and T for kilobytes, megabytes, gigabytes, and terabytes respectively.
+count=NUMBER	The number of blocks to read from the input file.
+In the following example, a file named /tmp/swapex is created with 500 "one-megabyte" size blocks of zeros:
+
+sysadmin@localhost:~$ dd if=/dev/zero of=/tmp/swapex bs=1M count=500
+500+0 records in
+500+0 records out
+524288000 bytes (524 MB) copied, 0.825745 s, 635 MB/s
+No block size or count needs to be specified when copying over entire devices. For example, to clone from one hard drive /dev/sda to another /dev/sdb, execute the following command:
+
+Note
+
+The examples below are designed to demonstrate how device files can be used to copy and backup devices. The files in the examples below are not available in our virtual machine environment.
+
+sysadmin@localhost:~$ dd if=/dev/sda of=/dev/sdb
+The dd command can even be used to make an .iso image backup of your CDROM or DVD device. The following will take all of the data from the DVD /dev/dvd and stores the data into a local file called dvd.iso:
+
+sysadmin@localhost:~$ dd if=/dev/dvd of=dvd.iso
+Consider This
+
+Device files are files used to refer to devices on the system, such as hard drives, CD-ROMS, and partitions. Device files are associated with file names that are stored in the /dev directory.
+
+The following information is provided to add clarity to the examples shown with the dd command:
+
+/dev/sda	A device file that typically refers to the first hard drive on the system.
+/dev/sdb	A device file that typically refers to the second hard drive on the system.
+/dev/dvd	A device file that typically refers to the first DVD drive on the system.
+
+
+
+##########################################################################################################################################
+
