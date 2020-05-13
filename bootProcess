@@ -1,0 +1,296 @@
+16.1 Introduction
+Booting is the process of bringing the system from an off status to a running operating system. It is very important to understand this process, in order to be able to fix boot problems when they occur and for modifying system states called runlevels or on systemd devices, targets.
+
+The boot process takes place in four main stages, some of which are modified by administrators, while for the others, it is sufficient just to be aware of the actions taking place:
+
+Firmware Stage
+Bootloader
+Kernel Stage
+Init Stage
+
+
+###########################################################################################################################################
+###########################################################################################################################################
+16.2 Firmware Stage
+The firmware stage is the first stage to take place after the computer is powered on. At this point, the computer has power but needs to start executing some software that will eventually get a full kernel booted.
+
+Most PC firmware is referred to as the Basic Input/Output System (BIOS). The BIOS is stored on the motherboard in non-volatile memory such as Read Only Memory (ROM) or flash memory.
+
+The BIOS has three main jobs to perform as part of the first stage of the boot process:
+
+Execute a power-on self test (POST) in order to ensure the hardware of the system is functioning properly. The POST runs some basic functional checks on the CPU, memory, and peripherals so that obvious errors, such as missing memory chips or malfunctioning disk devices are found early in the boot cycle.
+
+Enumerate available hardware such as memory, disks, and USB devices.
+
+Find the proper boot drive from the available storage devices and load the Master Boot Record (MBR) from that device. The Master Boot Record is the first sector (or 512 bytes) of the disk.
+
+Consider This
+
+Even on systems that have replaced the traditional BIOS with the Unified Extensible Firmware Interface (UEFI), the system firmware is still often referred to as BIOS. Both are firmware, the hardware-embedded tiny operating systems that manage the interface between hardware and the OS that you will be booting. BIOS is considered to be dated because it is limited to 16-bit memory addressing, can only be a certain size and boots by reading the first sector of a drive.UEFI uses a special partition on a drive called an EFI System Partition to store the bootloader for an OS.
+
+The BIOS and UEFI firmware have become more sophisticated over time. However, on most boot-ups, they are there to perform the three main steps above in order to get to the bootloader stage.
+
+
+###########################################################################################################################################
+###########################################################################################################################################
+16.3 Bootloader Stage
+The Master Boot Record contains a partition table and a very small amount of executable code called the first stage bootloader whose purpose is to load the more feature-rich second stage bootloader. The bootloader will perform several operations, but the primary task is to load the Linux kernel into memory and execute it.
+
+If a bootloader is able to fit entirely into the first 512 bytes of the Master Boot Record and to start the operating system with this limited amount of code, it is considered a single stage bootloader. A second stage is necessary when the code needed to initialize the system properly and start the operating system does not fit in the MBR. In this case, the first stage bootloader is there to point to the second stage bootloader, which can be larger and will be the bootloader that actually starts the operating system. Once that has occurred, the kernel takes over booting the system.
+
+The most common bootloader used on machines is the Grand Unified Bootloader (GRUB). The latest version of GRUB supports booting Linux from a system using UEFI, interactive editing of the menu during bootup, and much more.
+
+UEFI systems give the firmware stage a lot more memory and capabilities so that it can handle much larger and more complicated hardware.
+
+Consider This
+
+Outside of the IBM PC compatible architectures, there are additional bootloaders that are used. For Linux systems to boot on Sparc hardware, there is Sparc Improved bootLOader (SILO), and for PowerPC hardware, there is Yet Another BOOTloader (YABOOT).
+
+‌⁠​​⁠​ It is also possible to boot off the network through the Preboot Execution Environment (PXE). In the PXE system, a compatible motherboard and network card contain enough intelligence to acquire an address from the network and use the Trivial File Transfer Protocol (TFTP) to download a special bootloader from a server.
+
+As the bootloader is just some software that gets a kernel to run, it is possible to boot multiple operating systems at different times off of one computer in a process known as dual or multi-booting. The kernel that the bootloader is trying to run could be a Linux kernel, it could be a Microsoft Windows image, or it could be a bootable CD.
+
+The bootloader can also pass parameters to the kernel, such as to boot into a maintenance mode or to enable or disable certain hardware. This is done by manipulating the bootloader configuration. GRUB provides a reasonably powerful command line interface that lets an administrator make changes to the kernel before it boots without requiring that the configuration be written to disk.
+
+The bootloader then loads the kernel from disk into memory and transfers control over. The system is now running Linux and may finish booting.
+
+###########################################################################################################################################
+###########################################################################################################################################
+16.4 Kernel Stage
+Now that the bootloader has loaded the kernel into memory, there is much work to be done before programs can be loaded. The kernel must initialize any hardware drivers and get the root / filesystem mounted for the next stage. These two tasks are actually quite complicated because the facilities provided by the BIOS to access the hardware are quite limited. Therefore, the kernel must boot the system in several phases.
+
+The kernel itself is laid out much like a regular executable except that it must be self-contained. Shared libraries are not available at this point in the boot process so the kernel itself is statically linked, meaning that the kernel can only rely on information that was already compiled in the kernel at boot time and not on information in the shared libraries. This kernel typically lives in the /boot partition which, on most hardware, is in a separate partition that’s kept close to the beginning of the hard drive. This location is important for some BIOS and bootloader combinations that can only access the first 1024 cylinders of the disk.
+
+The /boot directory, alternatively the /boot/efi directory, is one of the most important directories in the File Hierarchy Standard (FHS). Most modern systems use the UEFI standard for specifying the exact location where the computer looks for the files it needs to start up. You may hear the term bootstrap used in this context, which simply signifies the method for the computer BIOS to locate and load the first part of the operating system when the computer powers up.
+
+If the BIOS is not set correctly, the system cannot load its bootstrap programs, and the startup process will fail. This parameter is normally set by interrupting the boot sequence at the beginning of startup (often with the F12 or Esc key) and entering the built-in BIOS configuration program. See instructions from the hardware manufacturer for the exact process and options available.
+
+As the size of the kernel increased over time, developers found it better to compress the kernel to make it fit within the limitations of the BIOS. Therefore, the executable comprising the kernel will decompress itself as it is loaded, leading to the name of zImage for the kernel, with the letter z being associated with the zlib Unix compression library.
+
+Over time, the kernel grew even more in size, and it became a problem to load the whole kernel into a consecutive block of memory. The bzImage kernel format came into being that allowed the kernel to be loaded into multiple memory blocks, specifically higher memory.
+
+Consider This
+
+The b in bzimage stands for big. It is NOT an indication that bzip2 is being used for compression of the image, gzip is still used for compression of the image.
+
+‌⁠​​⁠The Linux kernel must mount the root filesystem in order to get to the next step and to make the system useful. However, it is possible that the root filesystem exists on a device that the kernel does not know how to support. The solution to this is the initial RAM disk initrd. The kernel drivers necessary to continue the boot are bundled into the filesystem that is stored beside the kernel itself in /boot. The kernel boots, mounts the initrd, loads the drivers inside, and then remounts the real root filesystem using the new drivers. This allows drivers to be added to the kernel easily and for the kernel to mount the root filesystem over almost any storage hardware—even if it’s via a network.
+
+As the kernel is booting, it is able to initialize recognized hardware and make detected devices available to the rest of the operating system.
+
+The kernel’s final job is to start the first process on the system. The first process will normally have a process id (PID) of 1; on a System V system, the name of this process is init.
+
+Note
+
+On systemd systems, the /sbin/init file is a symbolic link to the /usr/lib/systemd/systemd file for purposes of compatibility.
+
+To show the first process, init, execute the ps command using the following non-BSD options, which will show all processes running on a system in a hierarchical format:
+
+sysadmin@localhost:~$ ps -ejH
+  PID  PGID   SID TTY          TIME CMD
+    1     1     1 ?        00:00:00 init
+   32    32    32 ?        00:00:00   rsyslogd
+   37    37    37 ?        00:00:00   cron
+   39    39    39 ?        00:00:00   sshd
+   56    56    56 ?        00:00:00   named
+   69     1     1 ?        00:00:00   login
+   79    79     1 ?        00:00:00     bash
+  676   676     1 ?        00:00:00       ps
+The first process is responsible for much of the operation of the system from here on in. For our purposes, we use /sbin/init for consistency, keeping in mind that a different system may be running systemd instead of System V for process management.
+
+In some cases, such as embedded hardware, the init process could be a shell or a specialized daemon. In any case, this first process will start the daemons that the rest of the system will use. This process will be the parent process for any process that otherwise is missing a parent. This process persists for the life of the system.
+
+###########################################################################################################################################
+###########################################################################################################################################
+16.5 The init Stage
+The init stage finishes booting the system. The first process of the operating system (also called init) is started. The init process has three important responsibilities:
+
+Continue the booting process to get services running, login screens displaying, and consoles listening.
+Start all other system processes.
+Adopt any process that detaches from its parent.
+‌⁠​​⁠​
+Until recently, this process followed a design that was established with the release of System V of Unix, which is sometimes referred to as SysVinit. The actual process that is executed is the init process. Recently, other programs have emerged to compete with and replace the traditional init process with Upstart and systemd.
+
+If the system uses the traditional init program, then the /etc/inittab file is used to determine what scripts will be executed to start the services that will be available on the system.
+
+The inittab file points to other scripts that do the work, usually stored in the /etc/init.d directory. There will be more discussion of these scripts later, but in general, each service the system will run has a script that can start, stop, and restart a service, and init will cause each of these to be run in turn as needed to get the system to the desired state.
+
+If the traditional init has been replaced with Upstart, the scripts in the /etc/init directory are used to complete system initialization.
+
+If the traditional init has been replaced with Systemd, then the files in the /etc/systemd directory are used for starting up and running the system.
+
+Even if your system is using Systemd or Upstart as a replacement for the traditional init process, both replacements use an executable named init with the /sbin/init path name. This is to maintain compatibility with many legacy processes. So, while some of the behavior of Systemd and Upstart will be different, they have some features that are similar to the traditional init process.
+
+While your system will only use one of these booting technologies, it is important to understand all three. For example, while your current system uses the SysVinit technique, you might find yourself working on a different distribution in the future that makes use of Upstart. In any case, all three processes are testable topics on the LPIC exams
+
+
+###########################################################################################################################################
+###########################################################################################################################################
+16.5.1 initramfs
+Introduced in the 2.6 kernel timeframe, the initramfs is the initial root filesystem that a Linux system typically has access to. Think of it as a temporary "starter" filesystem that provides the files and drivers that are necessary to start the real root filesystem and continue the system startup.
+
+The initramfs filesystem is a workaround to a "chicken or the egg" problem; something cannot happen before the other, and vice-versa, ad infinitum. For example, the kernel may require a disk driver to access a disk, but that driver is located on the disk it wants to access. The two workarounds to this dilemma are 1) use initramfs or 2) compile the driver into the kernel.
+
+However, compiling the driver into the kernel has its own problems, not the least of which is it's considered somewhat inelegant and causes the kernel to be larger and take longer to load. The issue is compounded if the driver needs to be updated as it's compiled into the kernel.
+
+The situation becomes even more complex when the system has devices or filesystems that require a userspace program be executed or a user interaction with a userspace program in order to load. Since the original location of these userspace programs is the disk they are enabling to be loaded, it becomes a circular problem.
+
+Consider This
+
+User space and kernel space are the two regions of RAM that the Linux kernel manages. Programs running in Kernel space have access to all the regions of RAM and when a program requests access to something, the kernel will access it in a safe manner and return the information to the program. User space RAM has restrictions, programs running there cannot access all of the kernel space RAM or RAM used by other programs, all access to those regions must be made via system calls and be managed by the kernel.
+
+The initramfs is a cpio archive, which can be inserted into a certain spot in the kernel, whose contents are unpacked by the kernel and loaded into a RAM disk by the kernel for access. The kernel will note the initramfs cpio archive has contents, create a temporary filesystem RAM disk called tmpfs, and unpack the contents of the cpio archive into it.
+
+After being unpacked, the kernel will launch the init script included in the root / filesystem of the initramfs RAM disk, which will then load the necessary drivers and execute the required userspace programs needed to load the real root filesystem for the system. (A typical use case would be Logical Volume Manager (LVM), RAID, or encrypted filesystems.)
+
+After the initramfs-included init script is done loading the appropriate drivers and loading the real root filesystem, it transfers control the /sbin/init binary program on the real root filesystem to continue the initialization of the system.
+
+Once the kernel is fully booted and the real root filesystem is mounted, the memory allocated to the initial RAM disk can be freed. This is the main advantage of placing drivers in initramfs instead of compiling them into the kernel; if a driver in initramfs is not needed, it will not continue to occupy RAM after the boot stage.
+
+The initramfs is built initially with the mkinitramfs utility, or updated by the update-initramfs utility, which can also create a new initramfs. These commands will gather the needed files and userspace utilities from their installed locations to a temporary directory, archived by cpio and then compressed with gzip.
+
+Note
+
+Creating an initramfs is out of the scope of the LPIC objectives and thus, this course.
+
+
+###########################################################################################################################################
+###########################################################################################################################################
+16.6 Kernel Messages
+The dmesg command can be executed after booting the system to see the messages generated by the kernel during boot time. This is useful when the system doesn't appear to boot correctly; the messages displayed can help an administrator troubleshoot the boot process.
+
+‌⁠​​⁠​ Kernel messages are stored in a ring buffer of limited size; therefore, the messages that are generated at boot time may be overwritten later as the buffer fills up. It is possible that some of the kernel messages generated at boot time may be stored in the /var/log/dmesg file. Each time the system boots, the /var/log/dmesg file is overwritten with the messages that were generated during the boot process.
+
+It is common to execute the dmesg command upon connecting a new device to the system. This allows the administrator to see how the kernel dealt with the new device and usually to see what path name the new device has been assigned.
+
+sysadmin@localhost:~$ dmesg | tail -n 20
+[5974251.345037] br0: port 2(veth2) entered forwarding state
+[5974264.554578] br0: port 1(vxlan1) entered forwarding state
+[5974266.346778] br0: port 2(veth2) entered forwarding state
+[5974312.446398] br0: renamed from ov-0044a8-d8912
+[5974312.686393] vxlan1: renamed from vx-0044a8-d8912
+[5974312.744241] device vxlan1 entered promiscuous mode
+[5974312.807735] br0: port 1(vxlan1) entered forwarding state
+[5974312.810025] br0: port 1(vxlan1) entered forwarding state
+[5974313.419196] veth2: renamed from vethe3e05ea
+[5974313.475445] device veth2 entered promiscuous mode
+[5974313.513109] IPv6: ADDRCONF(NETDEV_UP): veth2: link is not ready
+[5974313.513114] br0: port 2(veth2) entered forwarding state
+[5974313.515380] br0: port 2(veth2) entered forwarding state
+[5974313.788114] br0: port 2(veth2) entered disabled state
+[5974314.346447] eth0: renamed from veth09f186c
+[5974314.439047] IPv6: ADDRCONF(NETDEV_CHANGE): veth2: link becomes ready
+[5974314.447452] br0: port 2(veth2) entered forwarding state
+[5974314.450219] br0: port 2(veth2) entered forwarding state
+[5974327.857296] br0: port 1(vxlan1) entered forwarding state
+[5974329.457467] br0: port 2(veth2) entered forwarding state
+
+###########################################################################################################################################
+###########################################################################################################################################
+16.7 The /var/log/messages File
+Kernel messages and other system-related messages are typically stored in the /var/log/messages file. This file, which is considered the main log file, is alternatively named /var/log/syslog in some distributions. The contents of the /var/log/messages file will look like the following:
+
+Note
+
+The following examples represent a system that is different from this virtual machine. The example may not match the output in our virtual environment.
+
+[root@centos ~]# tail /var/log/messages
+May 27 23:01:59 localhost named[1007]:     validating @0x7f0d34433a50:  .
+DNSKEY:  unable to find a DNSKEY which verifies the DNSKEY RRset and also
+matches a trusted key for '.'
+May 27 23:01:59 localhost named[1007]:     validating @0x7f0d34433a50:  .
+DNSKEY: please check the 'trusted-keys' for '.' In named.conf .
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'dlv.isc.org/DNSKEY/IN' : 2001:500:e::1#53
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'dlv.isc.org/DNSKEY/IN' : 2001:500:e::1#53
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'dlv.isc.org/DNSKEY/IN' : 2001:500:e::1#53
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'dlv.isc.org/DNSKEY/IN' : 2001:500:e::1#53
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'ns.iscafilias-nst.info/AAAA/IN' : 2001:500:e::1#53
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'ns.iscafilias-nst.info/AAAA/IN' : 2001:500:e::1#53
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'ns.iscafilias-nst.info/AAAA/IN' : 2001:500:e::1#53
+May 27 23:01:59 localhost named[1007]:   error (network unreachable)
+resolving 'ns.iscafilias-nst.info/AAAA/IN' : 2001:500:e::1#53
+‌⁠​
+ Traditionally, the primary log file is updated with new log entries by the combination of the syslogd and klogd daemons. Replacements for these daemons include rsyslogd and syslog-ng daemons.
+
+Note
+
+A daemon is a process that automatically runs as a background process. System logging daemons such as syslogd, klogd, rsyslogd, and other logging daemons are background processes that send system messages to log files.
+
+As is customary in Linux, the letter “d” in the process name signifies it is a daemon. For example, syslogd is the daemon that supports the syslog system logging protocol.
+
+On a systemd-based system, the journald daemon is the logging mechanism, and it’s configured by the /etc/systemd/journald.conf file. The format of a journald log file is binary, which is different from the more traditional logging daemons mentioned previously. Use the following command to view the journald configuration settings in the /etc/systemd/journald.conf file:
+
+[root@centos ~]# cat /etc/systemd/journald.conf
+#Seal=yes
+#SplitMode=uid
+#SyncIntervalSec=5m
+#RateLimitInterval=30s
+#RateLimitBurst=1000
+#SystemMaxUse=
+#SystemKeepFree=
+#SystemMaxFileSize=
+#RuntimeMaxUse=
+#RuntimeKeepFree=
+#RuntimeMaxFileSize=
+#MaxRetentionSec=
+#MaxFileSec=1month
+#ForwardToSyslog=yes
+#ForwardToKMsg=no
+#ForwardToConsole=no
+#ForwardToWall=yes
+#TTYPath=/dev/console
+#MaxLevelStore=debug
+#MaxLevelSyslog=debug
+#MaxLevelKMsg=notice
+#MaxLevelConsole=info
+#MaxLevelWall=emerg
+#LineMax=48k
+[root@centos ~]# _
+The main log file on a systemd-based device is the /var/log/journal file for persistent logging or in the /run/log/journal file for RAM-based and non-persistent logging.
+
+The journald log files are viewed with the journalctl command, such as this one which shows similar output to the dmesg command:
+
+[root@centos ~]# journalctl -b
+-- Logs begin at Tue 2019-06-04 16:21:58 UTC, end at Tue 2019-06-04 16:26:25 UTC
+Jun 04 16:21:58 centos systemd-journal[84]: Runtime journal is using 4.0M (max a
+Jun 04 16:21:58 centos kernel: Initializing cgroup subsys cpuset
+Jun 04 16:21:58 centos kernel: Initializing cgroup subsys cpu
+Jun 04 16:21:58 centos kernel: Initializing cgroup subsys cpuacct
+Jun 04 16:21:58 centos kernel: Linux version 3.10.0-957.e17.x86_64 (mockbuild@kb
+Jun 04 16:21:58 centos kernel: Command line: BOOT_IMAGE=/vmlinuz-3.10.0-957.e17.
+Jun 04 16:21:58 centos kernel: e820: BIOS-provided physical RAM map:
+Jun 04 16:21:58 centos kernel: BIOS-e820: [mem 0x0000000000000000-0x000000000009
+Jun 04 16:21:58 centos kernel: BIOS-e820: [mem 0x000000000009fc00-0x000000000009
+Jun 04 16:21:58 centos kernel: BIOS-e820: [mem 0x00000000000f0000-0x00000000000f
+Jun 04 16:21:58 centos kernel: BIOS-e820: [mem 0x0000000000100000-0x000000001ffd
+Jun 04 16:21:58 centos kernel: BIOS-e820: [mem 0x000000001ffe0000-0x000000001fff
+Jun 04 16:21:58 centos kernel: BIOS-e820: [mem 0x00000000feffc000-0x00000000feff
+Jun 04 16:21:58 centos kernel: BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffff
+Jun 04 16:21:58 centos kernel: NX (Execute Disable) protection: active
+Jun 04 16:21:58 centos kernel: SMBIOS 2.8 present.
+Jun 04 16:21:58 centos kernel: DMI: QEMU Standard PC (i440FX + PIIX, 1996), BIOS
+Jun 04 16:21:58 centos kernel: Hypervisor detected: KVM
+Jun 04 16:21:58 centos kernel: e820: update [mem 0x00000000-0x00000fff] usable
+Jun 04 16:21:58 centos kernel: e820: remove [mem 0x000a0000-0x000fffff] usable
+Jun 04 16:21:58 centos kernel: e820: last_pfn = 0x1ffe0 max_arch_pfn = 0x4000000
+Jun 04 16:21:58 centos kernel: MTRR default type: write-back
+Jun 04 16:21:58 centos kernel: MTRR fixed ranges enabled:
+Lines 1-24_
+The journalctl command is the log file viewer for binary log files. The -b option makes the journalctl command behave similarly to the dmesg command, by displaying only messages concerning the most recent bootup, which can be useful for troubleshooting issues regarding the boot process.
+
+Regardless of its format, the binary log files that systemd generates through journald can be read with the journalctl command but are more difficult to read by standard means such as with the cat or less comands, and other text file viewers. However, the benefits of the new logging data format make that less important.
+
+On System V systems, the main log file, usually the /var/log/messages file, is a text-based file (or files), which can be viewed with the traditional text file viewer commands. Whether in binary or text format, log files can be helpful for analyzing why some services may not start correctly. They can also be helpful to determine why some devices may not be functioning, as the kernel will place log entries in this log file if it can detect a device and as it loads the appropriate kernel modules or drivers to support new devices.
+
+Although the /var/log/messages file is considered the main log file, there are other log files in the /var/log folder, which may need to be examined when trying to troubleshoot system service issues. For instance, the httpd apache web server daemon manages its own log files in another location, like the /var/log/httpd/error_log file. Traditionally, all log files are stored in the /var/log directory.
+
+
+
+
+###########################################################################################################################################
