@@ -1,0 +1,591 @@
+15.2.1 Central Processing Unit
+The central processing unit (CPU) is the brain of the computer, where the instructions to perform calculations or manipulate data are processed. There are numerous types of CPUs that are able to work with Linux, but the most common is the 64-bit x86_64 type, and decreasingly, the 32-bit x86 type. Both of these types of CPUs are backward compatible with the CPU used in the first IBM Personal Computer (PC), the Intel 8088 CPU.
+
+Knowing the type and capability of a system’s CPU is essential to knowing what software can be installed on it, and how it will perform. There are several ways to gather information about the type of CPU in a system. We will focus on determining this information from an already-installed Linux system.
+
+A prime location for CPU information is the firmware settings. Viewing the contents of the /proc/cpuinfo file will display extremely detailed information, including the model name, speed in MHz, and specific features available in a list of flags.
+
+The uname command is a valuable tool for quickly determining system information from the command line. Running the uname command with no parameters yields only the kernel name as shown below:
+
+sysadmin@localhost:~$ uname
+Linux
+The uname command has access to the files in the /proc and /sys directories which can display a lot of organized information about your system. Running uname with the -a option will show the following information (in order of appearance):
+
+Information	Option	Example
+Kernel name	-s	Linux
+Nodename	-n	localhost
+Kernel release	-r	4.4.0-72-generic
+Kernel version	-v	#93~14.04.1-Ubuntu SMP Fri Mar 31 15:05:15 UTC 2017
+Machine hardware	-m	x86_64
+Processor	-p	x86_64
+Hardware platform	-i	x86_64
+Operating System	-o	GNU/Linux
+sysadmin@localhost:~$ uname -a
+Linux localhost 4.4.0-72-generic #93~14.04.1-Ubuntu SMP Fri Mar 31 15:05:15 UTC
+2017 x86_64 x86_64 x86_64 GNU/Linux
+Each item can be display individually with the corresponding option. For a less detailed summary of the CPUs in your system, execute the uname -p command:
+
+sysadmin@localhost:~$ uname -p
+x86_64
+Another way to get more detailed information than the uname command can give you is to run the lscpu command. Much of the information the lscpu command returns is out of the scope of this objective but can be very useful in determining the hardware’s capabilities.
+
+sysadmin@localhost:~$ lscpu
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                8
+On-line CPU(s) list:   0-7
+Thread(s) per core:    1
+Core(s) per socket:    4
+Socket(s):             2
+NUMA node(s):          1
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 44
+Stepping:              2
+CPU MHz:               2394.000
+BogoMIPS:              4788.00
+Hypervisor vendor:     VMware
+Virtualization type:   full
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              256K
+L3 cache:              12288K
+NUMA node0 CPU(s):     0-7
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.2.2 Random Access Memory
+The random access memory (RAM) of a system is used to temporarily store data and instructions for the operating system and the programs that are executing. When the IBM PC debuted in 1981, it was able to access 1 MiB of memory, of which 640 KiB was RAM, and 384 KiB was for the system ROM.
+
+The maximum amount of memory that can be used with a 32-bit processor is 4 GiB, whereas a 64-bit processor can theoretically use 16 EiB of memory. In reality, many 32-bit systems may actually be limited to using 3 GiB of memory, and the hardware doesn't exist yet to be able to use the maximum amount of memory on a 64-bit system.
+
+From a practical perspective, if a system doesn't currently have at least 1 GiB of RAM, then it may not be able to use the graphical user interface (GUI) with Linux. When using only the command line interface (CLI), the memory requirements are much less.
+
+Consider This
+
+Unit	Abbreviation	Value (Bytes)
+kibibyte	KiB	1024
+mebibyte	MiB	10242 = 1,048,576
+gibibyte	GiB	10243 = 1,073,741,824
+tebibyte	TiB	10244 = 1,099,511,627,776
+exbibyte	EiB	10246 = 1,152,921,504,606,846,976
+A typical desktop in the year 2019 has 16 GiB of RAM. That is more than 26000 times the amount of RAM in a fully loaded IBM PC in the year 1981!
+
+Normally a system will have enough RAM to conduct its normal operations, run a few services, and maybe applications. If a system doesn't have sufficient RAM for the processes you are executing on it, then it will use virtual memory, called swap space in Linux. Swap space is hard drive space that is temporarily used to hold data that exceeds the amount of RAM available. When the system begins to run low on memory, it will "swap out" data that is least in demand at that moment, so that RAM space can free up for something that is currently in demand (typically a new process). If the system is using swap space constantly, then it will perform poorly in comparison to a system that doesn't; an increase in performance could be obtained if more RAM were added to the system.
+
+Swap space comes in two types; a swapfile that would reside on an existing filesystem, or a swap partition, which is a section of a disk that is dedicated to swap and is formatted with the swap filesystem. A swap partition is an essential part of a properly configured Linux system and yields the best performance for swap operations. Swap files have the overhead of being on an existing filesystem and should be used sparingly, and only if absolutely necessary.
+
+The amount of RAM in a system can be viewed in the firmware settings. For a very detailed breakdown of how much memory a system has and how it is being used, view the /proc/meminfo file:
+
+sysadmin@localhost:~$ cat /proc/meminfo
+MemTotal:       132014640 kB
+MemFree:        67439868 kB
+MemAvailable:   99487364 kB
+Buffers:         2116936 kB
+Cached:         27429740 kB
+SwapCached:           40 kB
+Active:         14409408 kB
+Inactive:       23724500 kB
+Active(anon):    8400252 kB
+Inactive(anon):   191680 kB
+Active(file):    6009156 kB
+Inactive(file): 23532820 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:      134196220 kB
+SwapFree:       134195752 kB
+Output Omitted...
+For a quick summary of RAM memory and swap space, execute the free command:
+
+sysadmin@localhost:~$ free
+              total        used        free      shared  buff/cache   available
+Mem:         128920       35120       89205           2        4594       93190
+Swap:        131050         140      130910
+The output above shows this system contains about 128 MiB of RAM memory; almost all of it is used. Very little memory is free because the system configures any unused memory for buffers and caches, which are temporary data stores, to speed up the system.
+
+Despite having so little free RAM, notice that the swap space of about 131 MiB has not been used at all; although if a heavy demand for memory (due to an additional load of processes) were placed on this system, then this swap space is available and would likely be used.
+
+Another notable bit of information from this output is that the swap space that has been configured is about twice as large as the amount of RAM. For systems with smaller amounts of RAM (under 16-32 GiB), it is common to configure the swap space to be twice the size of the amount of RAM.
+
+
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.2.3 Firmware
+Firmware is software that has been written to non-volatile memory such as read-only memory (ROM) or flash memory. There are several types of firmware that may be present in a computer system. On each device that provides services to a system (like a network interface card or a graphics display), there is typically a ROM chip that contains firmware for the device.
+
+The motherboard firmware contains the code that allows the integrated components of the system to work together. This firmware tests the components upon startup, identifies and initializes these components, and attempts to find a bootloader to load an operating system.
+
+Note
+
+Bootloaders will be covered in greater detail later in the course.
+
+Originally, this firmware was known as the Basic Input/Output System (BIOS), System ROM, or ROM BIOS. BIOS is used to provide basic services, called input and output services before an operating system is loaded, so the user may provide input through the keyboard or see output on a monitor even before the bootloader or an operating system is executed.
+
+Recently, computer manufacturers have begun to replace the traditional BIOS with something called the Unified Extensible Firmware Interface (UEFI); however, the functions of UEFI appear so similar to BIOS that many people still refer to the system firmware as BIOS.
+
+Both UEFI-based systems and BIOS-based systems provide a proprietary menu program that allows integrated devices to be enabled or disabled. The firmware that is included varies with each system vendor, so, unfortunately, there is no standard way to start this program or standard menu item for enabling or disabling devices.
+
+Entering the program that will allow adjustments to the firmware settings typically requires that a designated key is pressed immediately after turning the system on. Many systems use a function key like F2 or F12, while others might use the Esc or Del keys to start the firmware settings program. When a computer is powered on, messages typically appear on the splash screen indicating the appropriate key to press. If the correct key is not displayed on the splash screen, it may be necessary to refer to vendor documentation.
+
+‌⁠​​⁠​If a system has UEFI firmware, then it may be more challenging to boot the Linux operating system due to a feature called Secure Boot. If Secure Boot is enabled, then the bootloader must be cryptographically signed by a digital key that is recognized by the firmware. If the bootloader is not properly signed, then booting may still be possible by disabling Secure Boot in the firmware settings, in favor of the Compatibility Support Module (CSM).
+
+Not only can the firmware settings be used to enable or disable Secure Boot, settings can also be changed that will affect which devices, and in what order, the firmware will look for a bootable device. The firmware settings can even be used to affect the use of external devices like keyboards.
+
+As advancements in integration of peripherals have occurred, more components have been placed on-board, meaning they are embedded into the motherboard of a system. These integrated peripherals can be managed through firmware as well. Historically, a peripheral was added to the system by inserting a card on the peripherals bus, such as a video card or networking card. Then the peripheral had to be manipulated either via physical jumper or switch settings to properly use the right memory location and IRQ or Interrupt Request number. All of this is typically pre-configured on systems that have integrated peripherals, by the manufacturer, typically with no need for the computer’s user to be involved.
+
+Commonly, server systems may be configured to run headless, that is without a keyboard, mouse, or monitor. Typically, the BIOS will prevent a computer from booting without a keyboard present. It may be necessary to change the firmware settings to disable this feature for headless systems.
+
+
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.2.4 Mass Storage Devices
+Although Linux doesn't strictly require a mass storage device, most systems will include one or more of such devices. The most common mass storage device is the mechanical hard disk (or fixed disk). These types of disks come with a variety of interfaces or ways that they connect to the computer system.
+
+There are quite a few mass storage interfaces that are still in use today:
+
+The Small Computer System Interface (SCSI) is one of the oldest and requires a SCSI controller in the system to control one or more disk drives that connect to it.
+
+The Integrated Drive Electronics (IDE) or Parallel Advanced Technology Attachment (PATA) type interface includes the controller directly on each drive and was very popular for hard disks through the 1990s. This type is still used for some optical drive devices today.
+
+The most common interface used for internal mass storage devices today is the Serial Advanced Technology Attachment (SATA) type. Each SATA drive is connected directly to the system board by a cable. To configure the primary SATA drive, connect it with a cable to the connector of the system board that is designated as the primary port.
+
+For external drives, the Universal Serial Bus (USB) interface is the most common, but there are other standards such as FireWire and Thunderbolt.
+
+Note
+
+Data storage devices use either serial or parallel interfaces. The S in SCSI, in SATA, and in USB all stand for the word serial. That is why they appear as /dev/sda1 meaning Device Serial Drive A partition 1.
+
+The df -h command can be used to determine which type of drive is being used in a Linux based computer.
+
+sysadmin@localhost:~$ df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda9        58G  7.7G   49G  14% /
+tmpfs           7.9G     0  7.9G   0% /dev
+shm              64M     0   64M   0% /dev/shm
+/dev/sda9        58G  7.7G   49G  14% /etc/hosts
+The df command is covered in greater detail later in the course.
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.3 Plug and Play
+In addition to the core hardware, there are many other components, commonly known as peripherals, that may be used with the computer system. It is important to know if a peripheral requires that the power to the computer system be turned off at the time it is connected, or if the peripheral may be connected while the computer system is on. If the power to the computer system is on and the peripheral requires that the power be turned off, connecting the device may result in damage to the peripheral, ‌⁠​​⁠​ the computer system, or both.
+
+Devices that are supposed to be connected when the power is off are known as coldplug devices. Devices that can be connected when the power is on are known as hotplug devices. In order to "plug and play", or plug in a device while the system is powered on and have it work, the device, the interface, the driver, and the operating system all must support hotplugging for that device.
+
+Consider This
+
+Typically, USB devices are hot pluggable. This means that the USB device will be auto-recognized by the running operating system, so you don't have to do anything for the system to “see” the device; just plug it in, and the USB drivers will see it, auto-configure, and connect it properly.
+
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.4 Hardware Resources
+In order for a device to work correctly, certain resources must be allocated to it. Originally, PCs had very limited resources that had to be manually managed; the administrator would have to set jumpers or switches on the devices to configure them for the resources that they would use. This was problematic, as a mistake might create a situation where one resource was being allocated to more than one device, resulting in one or both devices not working. In some cases, improper allocation of resources could even result in a non-functional system.
+
+Not only are more resources available today, but they are also automatically allocated and managed by the operating system instead of manually by the administrator.
+
+There are four types of hardware resources that devices use to communicate with the system. As some of these resources refer to input and output, part of their name may be abbreviated as IO. The four resources are: IO ports, IO memory, interrupt requests (IRQ), and direct memory access (DMA) channels:
+
+IO Ports - Memory addresses that allow for communication with hardware devices. The current system addresses in use can be viewed by executing the following command:
+
+sysadmin@localhost:~$ cat /proc/ioports
+0000-0cf7 : PCI Bus 0000:00
+  0000-001f : dma1
+  0020-0021 : pic1
+  0040-0043 : timer0
+  0050-0053 : timer1
+  0060-0060 : keyboard
+  0064-0064 : keyboard
+Output Omitted...
+IO Memory - A section or location that acts much like the RAM that is presented to the processor via the system bus. These are used to pass and store data as well as for access to devices on the system. IO memory information can be viewed by executing the following command:
+
+sysadmin@localhost:~$ cat /proc/iomem
+00010000-0009ffff : System RAM
+000a0000-000bffff : PCI Bus 0000:00
+000c0000-000c7fff : Video ROM
+000c8000-000cdfff : Adapter ROM
+000f0000-000fffff : System ROM
+00100000-be777fff : System RAM
+  06000000-0680bdb2 : Kernel code
+  0680bdb3-06f45abf : Kernel data
+Output Omitted...
+Interrupt Requests (IRQ) - An interrupt is a hardware signal that pauses or stops a running program so that the interrupt handler can switch to running another program, or send and receive data. There are a set of commonly-defined interrupts called IRQ’s that map to common interfaces, such as the system timer, keyboard controller, serial and parallel ports, and floppy controllers. The /proc/irq directory contains configuration information for each IRQ on the system.
+
+Direct Memory Access (DMA) - A method by which particular hardware items in the system can directly access RAM, without going through the CPU. This speeds up access, as the CPU would otherwise be fully tasked during such access, making it unavailable for other tasks for the duration. DMA information can be viewed by executing the following command:
+
+sysadmin@localhost:~$ cat /proc/dma
+ 4: cascade
+Note that, with the exception of interrupt requests, these resources cannot be shared between devices. Also, keep in mind that administrators rarely need to view this data on modern Linux systems as the configuration of devices is almost always transparent and automatic.
+
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.5 Viewing Hardware
+Viewing the details of what hardware is attached (including peripherals attached via USB, etc.) or contained in a running Linux system is important to successfully troubleshoot problems that may occur during boot up and day-to-day operations.
+
+Consider This
+
+Modern computers typically use the Peripheral Component Interconnect Express (PCIe) bus to connect components inside the computer. For example, video, sound, network, and disk controllers are normally found on the PCIe bus.
+
+A bus is not only used to refer to actual physical connections, but also software components designed to connect programs and certain communications protocols. Components are attached with a type of bus and communicate through it at high rates of speed.
+
+Buses can be alternatively grouped into internal and external bus types. Internal buses are considered to be inside the actual computer, while external or “expansion” buses are used to attach external devices to the computer. Good examples of internal buses are the aforementioned PCIe bus, the older Industry Standard Architecture (ISA) bus, and the very popular Small Computer Systems Interface (SCSI) bus. An example of an external or expansion bus type would be the most universally available Universal Serial Bus (USB) bus.
+
+Bridges connect the various buses on a system to each other and allow for cross bus communications when necessary.
+
+PCI Bus depicted as horizontal arrow with devices connected to it underneath and PCI Bridge above it. Connected to the PCI Bridge is a CPU and RAM.
+While there are files and directories in the /proc and /sys directories that contain hardware information, users can run various commands to view the multiple aspects of the hardware that makes up or is attached to the system.
+
+First among these is the lspci command, designed to show the user the PCI buses and devices attached to them.
+
+In the output of the command below you will see the various bridges listed; those are connections between the different buses on the system, interconnecting them with each other.
+
+Additionally, users can view the USB controller, Ethernet, sound, and other video and peripheral connection buses and controllers.
+
+sysadmin@localhost:~$ lspci
+00:00.0 Host bridge: Intel Corporation 5520 I/O Hub to ESI Port (rev 13)
+00:01.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Por
+t 1 (rev 13)
+00:03.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Por
+t 3 (rev 13)
+00:04.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 4 (
+rev 13)
+00:05.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 5 (
+rev 13)
+00:06.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 6 (
+rev 13)
+00:07.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Por
+t 7 (rev 13)
+00:09.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Roo
+t Port 9 (rev 13)
+00:14.0 PIC: Intel Corporation 7500/5520/5500/X58 I/O Hub System Management Regi
+sters (rev 13)
+00:14.1 PIC: Intel Corporation 7500/5520/5500/X58 I/O Hub GPIO and Scratch Pad
+Registers (rev 13)
+For viewing external devices, the lsusb command will show those that are specifically connected to the Universal Serial Bus (USB).
+
+sysadmin@localhost:~$ lsusb
+Bus 002 Device 006: ID 0624:0249 Avocent Corp. Virtual Keyboard/Mouse
+Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 006 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 005 Device 003: ID 0624:0248 Avocent Corp. Virtual Hub
+Bus 005 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 001 Device 002: ID 0424:2514 Standard Microsystems Corp. USB 2.0 Hub
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Another tool for viewing details about USB devices connected to the system is the usb-devices command. This is a script, which when executed will display information about the USB device that can otherwise be found in the /sys or /proc directories, including; the USB device number, vendor, port and more:
+
+sysadmin@localhost:~$ usb-devices | tail -n 15
+S:  Manufacturer=Avocent
+S:  Product=USB Composite Device-0
+S:  SerialNumber=20120430
+C:  #Ifs= 2 Cfg#= 1 Atr=c0 MxPwr=2mA
+I:  If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
+I:  If#= 1 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=02 Driver=usbhid
+
+T:  Bus=06 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+D:  Ver= 1.10 Cls=09(hub  ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=1d6b ProdID=0001 Rev=04.04
+S:  Manufacturer=Linux 4.4.0-72-generic uhci_hcd
+S:  Product=UHCI Host Controller
+S:  SerialNumber=0000:00:1d.1
+C:  #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+If the user requires more information than the lspci and lsusb commands show normally, simply append a -v option to either command and a great deal more information will be shown; taking the output from one line per item to a stanza-based output where each item is shown with multiple details.
+
+To demonstrate, the output of the lspci -v command below displays only a single screen of output. The complete output would be 350+ lines long!
+
+sysadmin@localhost:~$ lspci -v
+00:00.0 Host bridge: Intel Corporation 5520 I/O Hub to ESI Port (rev 13)
+        Subsystem: Dell 5520 I/O Hub to ESI Port
+        Flags: fast devsel, IRQ 15
+        Capabilities: <access denied>
+lspci: Unable to load libkmod resources: error -12
+
+00:01.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express
+Root Port 1 (rev 13) (prog-if 00 [Normal decode])
+        Flags: bus master, fast devsel, latency 0, IRQ 25
+        Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
+        Memory behind bridge: d6000000-d9ffffff
+        Capabilities: <access denied>
+        Kernel driver in use: pcieport
+
+00:03.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express
+Root Port 3 (rev 13) (prog-if 00 [Normal decode])
+        Flags: bus master, fast devsel, latency 0, IRQ 26
+        Bus: primary=00, secondary=02, subordinate=02, sec-latency=0       	
+        Memory behind bridge: da000000-ddffffff
+Finally, if a user has an issue with a component and is able to see that component mentioned in the lspci -v output, they can get more information about the malfunctioning component by referring to the multiple digit vendor and device code that prefaces the stanza for each device.
+
+For example, to get more information about the IDE interface from the machine above, the user can run the lspci command with the -v and -s options followed by the vendor and device code as a parameter. The -s option will allow for a domain to be specified which will display information solely about devices in that domain:
+
+sysadmin@localhost:~$ lspci -v -s 00:07.0
+00:07.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express
+Root Port 7 (rev 13) (prog-if 00 [Normal decode])
+        Flags: bus master, fast devsel, latency 0, IRQ 30
+        Bus: primary=00, secondary=06, subordinate=06, sec-latency=0
+        Capabilities: <access denied>
+        Kernel driver in use: pcieport
+lspci: Unable to load libkmod resources: error -12
+To isolate the details of a specific USB device, find the vendor and device code in the output of the lsusb command, then use the lsusb command again, this time with the -v and -d options to get the isolated details of a device. The -d option will allow for a vendor or product ID to be specified, which will only display devices with that number. For example, to show details about Device 003, use the following command:
+
+sysadmin@localhost:~$ lsusb -v -d 0624:0248 | less
+Bus 005 Device 003: ID 0624:0248 Avocent Corp. Virtual Hub
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               1.10
+  bDeviceClass            0 (Defined at Interface level)
+  bDeviceSubClass         0
+  bDeviceProtocol         0
+  bMaxPacketSize0        64
+  idVendor           0x0624 Avocent Corp.
+  idProduct          0x0248 Virtual Hub
+  bcdDevice            0.00
+  iManufacturer           1
+  iProduct                2
+  iSerial                 3
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength           59
+    bNumInterfaces          2
+    bConfigurationValue     1
+:
+Note
+
+Type the Q key to exit the less command.
+
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.6 Hardware Subsystems
+Linux distributions are more capable than ever, particularly in the area of device management. Devices built into the computer system are typically not removable unless the system is shut down and power disconnected for safety.
+
+The concept of hotplugging — plugging devices into a port on a Linux system and having the running system automatically recognize the device correctly, then possibly run a program or execute a set of actions, works extremely well in modern Linux distributions due to a trio of device management tools.
+
+The trio of device management tools starts with udev, a device management subsystem that manages the /dev directory and will automatically create and destroy node points (references to a device) for devices that are attached to the system, or subsequently removed.
+
+To accomplish this, the udev subsystem maintains a pseudo-filesystem mounted as the /dev directory. The files in the /dev directory represent devices currently connected to the system. When the Linux kernel detects a device being connected, the udev daemon is used to create a device file (or node) in the /dev directory. If the device is removed, the udev daemon then removes the device node in the /dev directory.
+
+Consider This
+
+Older Unix systems tended to create all possible device nodes in /dev, just in case they were needed; udev only creates and maintains nodes for devices currently connected. This keeps the directory nice and neat and clean, easy to troubleshoot, and to determine what’s actually present and attached to the system.
+
+Configuration files in the /etc/udev/rules.d directory are used to define rules that assign specific ownerships, permissions, and persistent names to these device files. These files allow a user to configure how udev handles the devices it manages.
+
+The second part of the device management trio is the sysfs subsystem, which is another in-memory filesystem that consists of directories and text files that contain values about the kernel’s operation and configuration.
+
+The sysfs subsystem is typically mounted as the /sys subdirectory. The /sys directory and sysfs exist because there is a need to provide information about the kernel, its attributes, and contents to users via programs such as ps, top, and other programs that provide information to the regular user through command line output. To view the contents of the /sys directory on the system, use the following command:
+
+sysadmin@localhost:~$ ls /sys
+block  class  devices   fs          kernel  power
+bus    dev    firmware  hypervisor  module
+Modern systems (kernels 2.5 and beyond) use sysfs to express kernel information into the /sys directory because the procfs subsystem (and the /proc directory) had become increasingly busy and cluttered. Like the /sys directory, the /proc directory contains information about the system hardware, including devices and the kernel. However, as an ever-larger set of kernel subsystems started using the /proc directory to express their structures and expose kernel information for the system user to access, the /proc directory became busy and somewhat jumbled in nature, like a closet that has too many items packed into it. In comparison, the /sys directory structure forces a certain austerity and cleanliness by design, as the rules for using the /sys directory are “one item per file” and no more.
+
+This allows for a much neater and easier to understand expression of kernel objects and their attributes, and allows for easier documentation and programming.
+
+For example, in the /proc directory, you can use the tree command to show a hierarchical tree of the files and directories that are contained there. However, the listing will be many pages long, so using the less command will be of great benefit in scrolling up and down and looking at the output.
+
+sysadmin@localhost:~$ tree /proc | less
+/proc
+|-- 1
+|   |-- attr
+|   |   |-- current
+|   |   |-- exec
+|   |   |-- fscreate
+|   |   |-- keycreate
+|   |   |-- prev
+|   |   `-- sockcreate
+|   |-- autogroup
+|   |-- auxv
+|   |-- cgroup
+|   |-- clear_refs
+|   |-- cmdline
+|   |-- comm
+|   |-- coredump_filter
+|   |-- cpuset
+|   |-- cwd -> [Error\ reading\ symbolic\ link\ information]
+|   |-- environ
+|   |-- exe -> [Error\ reading\ symbolic\ link\ information]
+|   |-- fd [error opening dir]
+|   |-- fdinfo [error opening dir]
+|   |-- gid_map
+:
+Many of the files in the /proc directory will contain more than a single value, whereas the files in the /sys directory are designed to be simpler and contain a single text value, making them more predictable and easier to use.
+
+Finally, the last of the trinity of device management tools is the Hardware Abstraction Layer (HAL) daemon, (aka hald). As the kernel detects a device, it puts the information about the device into the appropriate files in the /sys directory. The hald is responsible for discovering and maintaining a list of connected devices and their attributes by monitoring the files in the /sys directory.
+
+To view the list of devices and their attributes that have been stored by hald, execute the lshal command. The lshal command's output will likely contain thousands of lines of text. To see information about specific devices, make use of the grep command, as shown in the following example:
+
+Note
+
+The following example may not match the output in our virtual environment.
+
+sysadmin@localhost:~$ 
+lshal | grep cdrom | grep true
+ storage.cdrom.dvd = true   (bool)
+ storage.cdrom.mrw = true   (bool)
+ storage.cdrom.mrw_w = true   (bool)
+ storage.cdrom.support_media_changed = true   (bool)
+ storage.cdrom.support_multisession = true   (bool)
+Finally, when programs want information about devices, they are able to query hald by using D-Bus.
+
+D-Bus is a method of allowing inter-process communications, primarily the communications between components in the Linux Desktop environments, KDE and GNOME. Without D-Bus, desktop environments will communicate between components with many separate processes, each requiring its own one-to-one communication with other components. This produces a confusing communications environment and can contribute to inefficiency and a lack of reliability and instability in the graphics subsystem.
+
+D-Bus is a software bus that allows individual and groups of processes to communicate on a single virtual bus or channel, a feature called Interprocess Communication (IPC).
+
+Dbus depicted as horizontal arrow with processes connected to it.
+D-Bus operates with an overall system bus that is available to all the processes on the system, whether they are system or user-related processes. Additionally, there is a session bus for each of the logged-in users for the processes that are connected to that user’s desktop session.
+
+Programs can also register themselves with D-bus to receive notifications from hald when specific types of hardware events occur. When the state of a hardware device changes, hald uses D-Bus to send notifications to those programs that have been registered for that type of hardware event.
+
+Since 2011, hald has been deprecated by many of the leading Linux distributions and has been eliminated from recent releases. In its place, the udev subsystem has been expanded, along with integrating Systemd.
+
+Systemd typically uses udev for its device management tasks. The job of udev is to let your computer know of device events, among other tasks. A user will likely not have to deal with udev directly unless there are archaic or odd devices that need to be made available and manual configuration to be done.
+
+Udev can manage any device that shows a link in the /dev directory when attached to the system, which udev is able to do through scripts known most commonly as udev rules. At their simplest, a udev rule is something that performs an action when a device is inserted, such as a thumb drive.
+
+For the majority of devices, the kernel will know exactly what to do already. For example, if you plug in a USB thumb drive, the kernel will likely mount it to one of the available spots in the /dev/sd* devices directory. If it does, you can access and use it, depending on its format and other compatibility settings.
+
+Udev can detect when a device has been attached or removed. Udev rules can establish custom actions that are taken when these events occur.
+
+Writing udev rules is beyond the scope of this course; however, you can use the udevadm command to view the pertinent information that would allow you to directly specify a device within a udev rule when it’s attached, and then execute specific actions on that device.
+
+There are two ways to do this:
+
+When a device is inserted.
+When you want to query a device that is either already attached or is built-in to the system, such as the main storage device (the /dev/sda device for example.)
+To watch what happens when a device is inserted or attached, run the following command:
+
+sysadmin@localhost:~$ udevadm monitor
+monitor will print the received events for:
+UDEV: the event udev sends out  after rule processing
+KERNEL - the kernel uevent
+To query an already-attached device for the necessary information, execute the command below:
+
+sysadmin@localhost:~$ udevadm info /dev/sda
+P: /devices/pci0000:00/0000:00:07.1/ata1/host0/target0:0:0/0:0:0:0/block/sda
+N: sda
+S: disk/by-id/ata-VMware_Virtual_IDE_Hard_Drive_00000000000000000001
+S: disk/by-id/wwn-0x5000c2947bd39bdb
+S: disk/by-path/pci-0000:00:07.1-ata-1
+E: DEVLINKS=/dev/disk/by-id/wwn-0x5000c2947bd39bdb /dev/disk/by-path/pci-0000:00:07.1-ata-1 /dev/disk/by-id/ata-VMware_Virtual_IDE_Hard_Drive_00000000000000000001
+E: DEVNAME=/dev/sda
+E: DEVPATH=/devices/pci0000:00/0000:00:07.1/ata1/host0/target0:0:0/0:0:0:0/block/sda
+E: DEVTYPE=disk
+The two preceding commands and a short study of the udev man pages about rules will inform beginners and system administrators on how to create custom rules for devices.
+
+
+################################################################################################################################################################
+################################################################################################################################################################
+15.7 Kernel Modules
+In addition to detecting devices, the Linux kernel may load software called kernel modules to support the device. Some devices are so common that the software to support them is normally compiled into the kernel itself, for example, the software for the CPU. Other devices that are not as common will have modules that are only loaded if the device is detected, for example, a specific network card.
+
+The kernel module may even load additional software such as firmware from a file or from the device itself. One concern of some users is that these firmware files may contain code that is not open source, meaning there is no way for a user to know what the code does exactly because it is proprietary and not shared with the public. If the kernel loads "non-free" code, then the kernel is considered to be "tainted" as the code of the kernel itself is free.
+
+Kernel modules can be used for more than supporting devices; since modules are simply software that is able to run within the kernel, they are able to be used for virtually anything. Some common uses besides device drivers include filesystems modules, networking protocols modules, and cryptographic algorithms modules.
+
+To view the list of loaded kernel modules, use the lsmod command:
+
+sysadmin@localhost:~$ lsmod
+Module                  Size  Used by
+af_packet_diag         16384  0
+netlink_diag           16384  0
+dccp_diag              16384  0
+dccp                   73728  1 dccp_diag
+udp_diag               16384  0
+unix_diag              16384  0
+tcp_diag               16384  0
+inet_diag              20480  3 tcp_diag,dccp_diag,udp_diag
+xt_nat                 16384  700
+xt_tcpudp              16384  718
+Output Omitted...
+The columns of data in the output above are:
+
+Module
+
+dccp                   73728  1 dccp_diag
+The name of the loaded module.
+
+Size
+
+dccp                   73728  1 dccp_diag
+The size in bytes of the module.
+
+Used by
+
+dccp                   73728  1 dccp_diag
+Indicates how many "things" depend on the current module being loaded. These "things" could include other modules, processes, or other features (such as a filesystem being mounted).
+
+dccp                   73728  1 dccp_diag
+Shows the name of the module that depends on the current module.
+
+It may be the case that you need to find modules based on the name, size, or dependencies. To filter the output of the lsmod command to only show specific modules, use the grep command:
+
+Note
+
+The following examples may not match the output in the virtual environment.
+
+sysadmin@localhost:~$ lsmod | grep ext4
+ext4                  465245  2
+crc16                  12503  1 ext4
+mbcache                17476  1 ext4
+jbd2                   82480  1 ext4
+The output above shows the modules that work together to support the ext4 filesystem. In other words, the ext4 filesystem depends on these modules.
+
+Additionally, you can get more details about a module by using the modinfo command. For example, to learn more about the snd kernel module, execute the following command:
+
+sysadmin@localhost:~$ modinfo snd
+filename:   	/lib/modules/3.13.0-35-generic/kernel/sound/core/snd.ko
+alias:      	char-major-116-*
+license:    	GPL
+description:	Advanced Linux Sound Architecture driver for soundcards.
+author:     	Jaroslav Kysela <perex@perex.cz>
+license:    	GPL
+description:	Jack detection support for ALSA
+author:     	Mark Brown <broonie@opensource.wolfsonmicro.com>
+srcversion: 	0EBCEABF53FC967306ED228
+depends:    	soundcore
+intree:     	Y
+vermagic:   	3.13.0-35-generic SMP mod_unload modversions
+signer:     	Magrathea: Glacier signing key
+sig_key:    	B1:41:4A:E9:6C:1B:0E:BB:7C:14:1F:A4:05:C1:F6:C9:8E:8A:66:F0
+sig_hashalgo:   sha512
+parm:       	debug:Debug level (0 = disable) (int)
+parm:       	slots:Module names assigned to the slots. (array of charp)
+parm:       	major:Major # for sound driver. (int)
+parm:       	cards_limit:Count of auto-loadable soundcards. (int)
+To get a list of all available modules, use the modprobe -l command:
+
+sysadmin@localhost:~$ modprobe -l | head
+kernel/arch/x86/kernel/cpu/mcheck/mce-inject.ko
+kernel/arch/x86/kernel/cpu/cpufreq/powernow-k8.ko
+kernel/arch/x86/kernel/cpu/cpufreq/mperf.ko
+kernel/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.ko
+kernel/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.ko
+kernel/arch/x86/kernel/cpu/cpufreq/p4-clockmod.ko
+kernel/arch/x86/kernel/test_nx.ko
+kernel/arch/x86/kernel/microcode.ko
+kernel/arch/x86/crypto/aes-i586.ko
+kernel/arch/x86/crypto/twofish-i586.ko
+Normally, kernel modules are loaded automatically by the kernel. To load a module manually, execute the modprobe command with the name of the module.
+
+For example, to load the ext4 module, execute the modprobe ext4 command. Note that if the module is loaded successfully, there is no output to this command. A quick use of the lsmod command will show if the module was loaded properly.
+
+One nice feature of the modprobe command is that it will automatically load all dependency modules, so in the case of loading the ext4 module, it would automatically load the crc16, mbcache, and jdb2 modules.
+
+The modprobe command can also be used to remove modules from memory with the -r option. Executing the modprobe -r ext4 command would remove the ext4 module from memory, and it will automatically remove the crc16, mbcache, and jdb2 modules from memory as long there was nothing else that depended upon them:
+
+sysadmin@localhost:~$ lsmod | grep ext4
+ext4                  465245  2
+crc16                  12503  1 ext4
+mbcache                17476  1 ext4
+jbd2                   82480  1 ext4
+sysadmin@localhost:~$ modprobe -r ext4
+sysadmin@localhost:~$ lsmod | grep ext4
