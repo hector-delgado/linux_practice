@@ -1,0 +1,291 @@
+19.2 Understanding Partitioning
+For many people who are new to Linux, the concept of partitioning may be foreign because desktop operating systems like Microsoft's Windows and Mac OS X don't normally expose users to complex partitioning schemes. Before learning how to partition, it is important to understand what partitioning is and the purpose behind partitioning, as well as terminology related to partitioning.
+
+Partitioning is necessary in order to optimally use the space that hard drives (hard disks) provide. A new hard drive is like a completely empty building, with no internal walls or floors. As it is, such a building wouldn't be useful, but populating the building with walls and floors would provide the structure needed to make use of the building.
+
+There are three steps in the process of making and using partitions:
+
+Divide the hard drive into partitions.
+Create and format filesystems inside the partitions.
+Mount the filesystem into the directory tree.
+This chapter will focus on defining partitions, filesystems, and mounting. The following chapters will focus on the steps to perform these tasks on a Linux system.
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.2.1 Understanding Partitions
+Consider a situation in which a school official needs to organize a library at a university. This library will cater to the needs of three different groups of students: law students, engineering students, and general education students. The administrator determines that it would be beneficial to separate the library books into three physical locations based on these groups, but there is only one physical building available. A solution would be to place all of the law books on the first floor, all of the engineering books on the second floor, and all other books on the third floor.
+
+This is the concept of partitioning. The hard drive is a storage container that is capable of storing all of the system’s files. However, there are benefits to breaking this large container into smaller containers.
+
+Within the library building, the separation would be easy to see, as this could be done by floor or by constructing walls between sections of the building. With a hard drive, it is important first to understand how a hard drive is physically constructed. Consider the following graphic:
+
+Hard Drive diagram showing 3 cylinders, boom, head, sector, spindle, track, platter.
+A typical hard disk drive (HDD) consists of multiple platters, which store data in magnetic form. Heads are able to read and write on both sides of each platter. The platters are connected to the spindle and spin at the same speed. The boom moves back and forth, allowing each head to read from or write to the same location on each platter simultaneously.
+
+One complete rotation around one side of a platter is called a track. The same track on both sides of all of the platters forms a cylinder:
+
+Cylinder diagram showing a cylinder labeled Cylinder X made up of four platters and a track on each platter labeled Track X.
+A typical hard drive may have thousands of cylinders. Multiple consecutive cylinders can be assigned to a partition. For example, consider the following graphic:
+
+Diagram showing four cylinders as dotted lines on four platters. The outside cylinder is labeled 1, the second is labeled 544, the third is labeled 1040 and the innermost cylinder is labeled 1600.
+The first partition would be from cylinder 1 to cylinder 544. The second partition would be from cylinder 545 to cylinder 1040. The last partition would be from cylinder 1041 to 1600.
+
+Creating these partitions is accomplished by a partitioning tool, such as the fdisk utility that will be covered in a later chapter.
+
+So, to summarize, a hard disk is broken into partitions by assigning consecutive cylinders to specific partitions. Each partition will then have a filesystem formatted on it to give the operating system a way to organize files and directories.
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.2.2 Partition Naming
+In order to distinguish one partition from another, each partition is given a unique name. Recall that everything in Linux is treated as a file, so the names of devices, such as drives and partitions, are stored in the /dev directory.
+
+There are two different types of drive interfaces:‌⁠​​⁠​ 
+
+Device Type	Name	Example
+Drives that start with sd are either SATA (Serial ATA), SCSI (Small Computer System Interface) or USB drives.	/dev/sd*	
+/dev/sda
+
+/dev/sdb
+
+Drives that start with hd are PATA (Parallel ATA), also known as IDE (Integrated Drive Electronics) drives.	/dev/hd*	
+/dev/hda
+
+/dev/hdb
+
+Partitions are then given names based on the drive they reside on. A number is added to the end of the drive name to distinguish one partition from another. For example, the partitions located on drive sda would be named sda1, sda2, etc. Partitions located on drive sdb would sdb1, sdb2, etc. The following output shows the device files for a SATA hard drive with nine partitions:
+
+sysadmin@localhost:~$ cd /dev
+sysadmin@localhost:/dev$ ls sd*
+sda  sda1  sda2  sda3  sda4  sda6  sda7  sda9
+Similarly, partitions on drive hda would be hda1, hda2, etc., while partitions on hdb would be hdb1, hdb2, etc.
+
+Note
+
+It is not critical that you understand the difference between SATA, IDE, etc. It is, however, critical that you understand that the files used to refer to hard drives are stored in the /dev directory and begin with either sd or hd.
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.2.3 Partition Limitations
+Historically, the number of partitions a system can have is limited by the Master Boot Record (MBR). Recall that the MBR is usually contained within the first sector or 512 bytes of the disk and contains a bootloader program, as well as the partition table. The partition table contains the definition of each partition on the hard drive, including the starting cylinder, ending cylinder, and size.
+
+Note
+
+Bootladers are covered in greater detail earlier in the course.
+
+Traditional disks using MBR partitioning can have a maximum of four primary partitions. For example, on a traditional SATA drive, four partitions can be created with device names of /dev/sda1, /dev/sda2, /dev/sda3, and /dev/sda4:
+
+Hard drive depicted as cylinder shape labeled sdb containing four partitions; sdb1 primary partition 1, sdb2 primary partition 2, sdb 3 primary partition 3 and sdb 4 primary partition 4.
+For non-Linux operating systems, multiple partitions are rarely needed, so the maximum of only four partitions per drive is not a serious limitation. However, on Linux servers, more than four partitions are often necessary. As a result, modern hardware allows the administrator to make one of the four partitions an extended partition. An extended partition acts as a container for additional partitions called logical partitions. Consider the following:
+
+Hard drive depicted as cylinder shape labeled sda1 containing three primary partitions; sdb1 primary partition 1, sdb2 primary partition 2, sdb 3 primary partition 3 and an extended partition containing five logical partitions; logical partition 5, logical partition 6, logical partition 7, logical partition 8, logical partition 9.
+ 
+The /dev/sda4 partition is an extended partition. The only things that are placed in this extended partition are additional partitions, logical partitions. In this example, /dev/sda5, /dev/sda6, /dev/sda7, /dev/sda8, and /dev/sda9 are logical partitions. By allowing /dev/sda4 to be an extended partition, more than four partitions are possible on this one hard drive. Depending upon the type of hard disk and kernel configuration, Linux can access a maximum of either 15 or 63 total partitions when extended partitions are used.
+
+Partitions are typically used to store filesystems. However, for extended partitions, a filesystem is never placed directly on the partition, but rather on each logical partition within the extended partition. Accidental placement of a filesystem directly on an extended partition can result in complete data loss of every logical partition contained within. Modern cloud computing can add complexity to partitioning as some filesystems can now span multiple connected data centers.
+
+Up until now, we’ve only discussed MBR partitioning; however, some hard drives make use of another partitioning type called the GUID Partition Table (GPT). A globally unique identifier (GUID) is a universally unique 128-bit number used to identify information on a computer system. This partitioning scheme was designed to replace the traditional MBR partitioning in use since PC DOS 2.0 was introduced in 1983 and is available on systems that support the Unified Extensible Firmware Interface (UEFI).
+
+GPT supports very large disks, up to 9ZB in size. Extended and logical partitions are not used with GPT; instead, all partitions are the same, and GPT supports a maximum of 128 partitions per disk. Creating GPT partitions is accomplished using a partitioning tool called gdisk, which is similar to the fdisk utility that is used for MBR partitions.
+
+In addition to MBR and GPT partition tables, there are other methods for dividing up the disk, including Berkeley Software Distribution (BSD) Unix Labels, Apple Partition Maps, and others. Also, there are tools to use partitions in more flexible and dynamic ways, like Logical Volume Management (LVM).
+
+Note
+
+Recall that UEFI is a replacement for the traditional BIOS standard which specifies the boot partition. Almost all systems built after 2010 support UEFI and it has become the de facto standard since drives larger than 2TB are now common. Systems using UEFI, use the Extensible Firmware Interface (EFI) specification that was originally released by Intel in 1998 to overcome the limitations of BIOS boot partitions. The EFI, also called EFI System Partition (ESP), is the partition that stores the bootloader for an operating system.
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.2.4 Filesystem
+Next, we'll examine the concept and purpose of the filesystem in regards to partitioning. In order to place files and directories on a partition, a filesystem needs to be created. This is accomplished by formatting the partition. A filesystem provides the operating system with a way to organize the files and directories. Moreover, a filesystem stores information about files, such as the permissions of the files, the owner of the files, and the file type.
+
+An analogy that may help in understanding filesystems is to consider the library example previously mentioned. A library has thousands of books (think files) that need to be organized in a manner that makes it easy to find a specific book. In order to do this, the books are organized into categories (think directories). However, just putting books into directories isn't sufficient since a single category can contain hundreds or even thousands of books.
+
+To better organize all of the books in the library, a system such as the Dewey Decimal System is used. This system provided a central catalog of index cards, normally located in a cabinet at the front of a section where individuals could determine the exact location of a specific book. Included in the catalog is metadata about each book, such as publication date, author, publisher, etc. A key component of this metadata is a unique identification number for each book.
+
+A filesystem performs the same functions of the Dewey Decimal System for files and directories. Each file will have an entry in the filesystem database, similar to a library catalog, although the database is often referred to as a table.
+
+Metadata about the file will be contained in this entry, which includes file attributes like ownership, timestamps, data block locations, and everything about the file except for its contents. The entry also includes a unique identification number for the file, called an inode number and pointers (or links) that inform the operating system of the location in the filesystem (where on the hard drive) the file's data is stored.
+
+Keep in mind that there is more than one way to organize books in a library. For example, in addition to the Dewey Decimal System, there is a system called the Library of Congress Classification system that performs the same function as the Dewey Decimal System but uses a different technique. The same holds true for the filesystems available for Linux; there is more than one type available, and each uses a different technique. Some of the more common filesystem types include:
+
+Type	Name	Advantages	Disadvantages
+ext2	Second Extended Filesystem	Works well with small and solid-state disk filesystems	No journaling capability, making it susceptible to data loss in the event of power loss.
+ext3	Third Extended Filesystem	Can be upgraded from existing ext2 filesystem without data loss. This filesystem performs journaling, which allows for data recovery after a crash.	Writes more to disk than ext2 because of journaling, making it slower. Does not support very large filesystems.
+ext4	Fourth Extended Filesystem	Support for very large disk volumes and file sizes. Can operate with or without a journal. Backwards compatible with ext3 and ext2.	Not a huge improvement over ext3. No dynamic inode creation.
+xfs	Extents Filesystem	Works very efficiently with large files. Compatible with the IRIX operating system from SGI. Announced to be the default filesystem for RHEL 7.	The filesystem cannot be shrunk.
+vfat	File Allocation Table	Supported by almost all operating systems. Commonly used for removable media.	Unable to support very large disks or files. Microsoft's intellectual property claims.
+iso	ISO 9660	The International Organization for Standardization standard for optical disc media that is supported by almost all operating systems.	Multiple levels and extensions complicate compatibility. Not designed for rewritable media.
+udf	Universal Disc Format	Designed to replace ISO 9660 and adopted as the standard format for DVDs by the DVD Consortium.	Write support is limited to support revision 2.01 of the standard.
+This is only a partial list of the filesystem types available in Linux and just a brief summary of the differences between them. A full description of the differences would be much more complex and beyond the scope of this course and the LPIC exam.
+
+Consider This
+
+One of the features mentioned in the preceding table is the journaling. While a complete discussion of journals is beyond the scope of this course, the following describes the basics of filesystem journals.
+
+As files are changed, metadata is not initially stored on the hard drive, but rather in memory. This speeds up the filesystem since writing these changes to the hard drive for every single file change would result in a lot of hard drive writes.
+
+At specific intervals, this metadata is written to the hard drive in large chunks; this process is called syncing. Normally this poses no problems, but if the system were to crash or lose power before a sync occurred, all of that metadata would be lost.
+
+A filesystem recovery program, like the fsck command, can often resolve these problems, but this can take quite a bit of time for large filesystems.
+
+A journaling filesystem enhances filesystem recovery. For every change made to a file, a journal entry is stored on the hard drive. While this does increase filesystem writes, a journal entry has much less impact on hard drive performance than writing the metadata directly to the hard drive for each file change.
+
+In a nutshell, a journaling filesystem aids in recovering corrupted filesystems while allowing for reduced hard drive writes.
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.2.5 Linux Filesystem Components
+When talking about Linux the term filesystem often refers to the ext2/ext3/ext4 family of filesystems. While there are differences between these filesystems, they are similar enough when it comes to core filesystem components.
+
+A full discussion of filesystem components is beyond the scope of this course, and also presents somewhat of a moving target with virtualization and cloud computing gaining prominence. However, since Linux still operates by the kernel communicating with external resources, all system administrators need to be familiar with the key filesystem components described below:
+
+Component	Description
+Superblock	At the beginning of the filesystem is an area called the superblock. This area is used to store important information about the filesystem, including the size of the filesystem, the type of filesystem, and which data blocks (where file data is stored) are available. The superblock is a key component of the filesystem; a corrupted superblock would make the filesystem inaccessible.
+Group Block	The filesystem is divided into smaller sections called groups. The group block serves to hold data about the group. Each group block also contains a backup copy of the superblock.
+Inode Table	Each file is assigned a unique inode number for the filesystem. This inode number is associated with a table that stores the file's metadata.
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.2.6 Physical vs. Virtual Filesystems
+So far, the discussion regarding filesystems has been specific to physical filesystems. A physical filesystem is the database structure installed on a partition to organize files and directories.
+
+Suppose an operating system consists of five partitions. In order to be able to access these partitions easily, their filesystems need to be merged together into a virtual structure.
+
+On Microsoft Windows, this is accomplished by assigning drive letters to each partition. The first partition is typically referred to as the C: drive (which is poorly named as it is actually a partition, not an entire drive). Newer Microsoft Windows systems may come with multiple partitions, resulting in partitions such as D:, E:, and F:. Note that A: and B: were previously used for floppy drives and are not typically used for hard drive partitions.
+
+To understand this better, consider the following diagram of the Disk Management component of Microsoft's Computer Management tool:
+
+Computer management window displaying hard drives Disk 0 and Disk 1.
+For this system, there are two hard drives named Disk 0 and Disk 1. Disk 0 has five partitions: three hidden, one assigned C: and another assigned D:. Disk 1 has two partitions one assigned E: and another assigned F:. Note that the tool also indicates that the type of filesystem that is installed on these partitions is NTFS.
+
+In Linux, there are no drive letters. Instead, each partition is assigned a device file name as mentioned previously:
+
+Device Types	Partition Name	Example
+SATA, SCSI, USB	/dev/sda*	
+/dev/sda1
+
+/dev/sda2
+
+PATA/IDE	/dev/hda*	
+/dev/hda1
+
+/dev/hda2
+
+Users do not access the files that are stored on these partitions by directly using these device file names. After all, it's not convenient to remember what files are located on /dev/sda1 versus what files are stored on /dev/sda2. Instead, these device files are merged into the directory structure by mounting the partition's filesystem under a directory tree. To understand what this means, first consider the following diagram:
+
+Filesystem with root directory at the top.
+From a regular user point of view, all of the directories in the previous graphic appear to be from a single hard drive. However, these directories could represent a collection of separate filesystems merged together into a single directory structure, which is called the virtual filesystem. Consider the following diagram:
+
+Filesystem with root directory at the top and directories underneath including /home, /mnt, /usr and /var. The files under the /home directory include /bob and /sue in /dev/sda3. The directories under /var include /log, /spool and /tmp in /dev/sda2.
+‌⁠​​⁠​ 
+As demonstrated from the previous graphic, all of the files under the /home directory are really stored in the filesystem that is on the /dev/sda3 partition. All of the files under the /var directory are stored in the filesystem that is on the /dev/sda2 partition. This makes /home and /var mount point directories. The / directory is also a mount point directory, likely for the filesystem on the /dev/sda1 partition.
+
+The process of placing a filesystem under a mount point is called mounting. This is accomplished either automatically at boot or manually with the mount command.
+
+Note
+
+Mounting is covered in greater detail later in the course.
+
+The concepts of the virtual filesystem can be a bit difficult to comprehend at first, so consider this. If the administrator were to unmount the /dev/sda3 filesystem from the previous example, then the virtual filesystem would look like the following:
+
+Filesystem with root directory at the top and directories underneath including /home, /mnt, /usr and /var. The files under the /mnt directory include /cdrom and /floppy. There are no directories under the /home directory.
+Notice that now there is nothing under the /home directory. This is normal because a mount point directory should be empty, as anything originally contained in a mount point directory will be replaced by the contents of the mounted partition's filesystem, and therefore be inaccessible. If the /dev/sda3 filesystem is mounted under the /home directory, then the bob and sue directories would again be available. Another way of thinking about it:
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.3 Why Create Partitions?
+So why create partitions? To begin with, at least one partition needs to be created. Regardless of the operating system, whether Linux, Microsoft Windows, or Mac OSX, at least one single partition needs to be created because filesystems are stored within partitions, not entire hard disks.
+
+There are several reasons why an administrator will choose to create multiple partitions when installing a Linux operating system:
+
+Supporting Multiple Operating Systems
+Some systems may contain Linux as well as a Microsoft Windows operating systems; these are called dual boot systems. Because the filesystems that are used with Microsoft Windows are different than Linux, this requires multiple partitions.
+
+Home Directories
+A separate partition for the user home directories is common and typically provides many advantages, including:
+
+It is easier to backup or restore an entire filesystem than it is to manage each user's home directory. Recall that each partition has a separate filesystem.
+
+When home directories are separated from the root filesystem, upgrades of the operating system can be performed much more safely and efficiently.
+
+Filesystems can have features enabled on them, such as disk quotas. A disk quota allows the administrator to limit how much space a user uses in a filesystem. Being able to create a disk quota for the home directories that doesn't affect the rest of the operating system can be an advantage.
+
+Common Writable Directories
+Some directories, such as the /tmp and /var/tmp directories, are world writable. This means that any user can store files in these directories without any limitations, by default. Unfortunately, that can cause problems if these directories are not placed on separate filesystems.
+
+If the /tmp and /var/tmp directories are not mount points, then files placed in these directories will go on the same partition as the / filesystem. If a user creates a very large file, then he could end up filling up the entire / filesystem. This would make the operating system unusable by all other users (except the root user for whom some space is reserved).
+
+Separating the /tmp and /var/tmp directories allows the administrator to enable disk quotas to limit how much space can be used by each user in those directories. Even if no quotas are put into effect, having directories on a separate partition means if a regular user fills up the partition(s) /tmp or /var/tmp are located on, the root filesystem or other critical filesystems are not affected.
+
+Consider This
+
+The /tmp and /var/tmp directories must be world writable for all users, in order for the operating system to function correctly.
+
+Security
+Using separate partitions may enhance security. Since each partition has separate inodes and data blocks, corruption to a single partition will be contained to its mount point within the virtual filesystem. Therefore, spreading files across multiple partitions is safer than having one partition that contains everything under the root directory.
+
+Sometimes a collection of files, perhaps old databases, need to be stored but shouldn't be modified. By placing them on a separate filesystem, that partition can be mounted as read-only to prevent any alteration.
+
+Heavily Active
+If running out of space is a concern due to heavy activity within a directory, it may be desirable to have it mounted on a separate partition. This is often the case for directories like the /var/log directory where the system adds log file data on a regular basis.
+
+When system processes (as opposed to regular users) write to the disk, quotas are not usually used to limit the space. Instead, these types of directories are mounted on separate filesystems so that if they fill up then it won't fill up the root / filesystem. While this may be bad because log files aren't generated, it is better than filling up the root / filesystem and making the operating system unusable for regular users.
+
+Another type of partition that is useful in making system tasking more efficient is swap space. To describe the concept of swap space, we will use another analogy of a physical library. In a library, there are always new books coming in and old ones going out. These books are usually kept in a storage room or basement, still organized but separate from the main shelves. If a book is being transferred, it is pulled from this storage and sent to another library where it will be used. In a computer filesystem, this area is called swap space. This is a location on the physical drive where data is stored while programs are using it. It emulates random access memory (RAM) and frees up the actual physical memory for other processing tasks. This allows the operating system to quickly provide information in files without having to read and write it to the main storage areas. When the user is finished with this data, it is written to the appropriate area on the drive, and the swap space is freed up for the next task. Swap space on an operating system can take the form of a dedicated partition (swap partition), a file (swap file), or both.
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+19.4 Partitioning Layout
+There are some requirements in the way partitions will map to the directories that they mount on. These requirements are documented in what is called the Filesystem Hierarchy Standard (FHS). The following table summarizes the FHS requirements, and provides some other suggestions:
+
+Directory	Purpose	Suggested Size
+/	The root filesystem holds the files essential to the operation of the system. It must contain the following directories or symbolic links: bin, boot, dev, etc, lib, media, mnt, opt, sbin, srv, tmp, usr, and var.	
+500MiB-50GiB+
+
+Depends on what is mounted separately
+
+/boot	The /boot directory contains the Linux kernel and the boot loader files.	500MiB-2GB
+/home	The /home directory is where user home directories are normally created.	500MiB+ per user
+/tmp	The /tmp directory is used to create temporary files for the system and users. If this directory is too small, it may prevent applications from functioning correctly.	
+Minimum of 5 GB +
+
+500MiB+ per user actively logged in
+
+/opt	The /opt directory is where third-party software is often installed. Some examples include Google Chrome and Google Earth.	
+100MiB+
+
+Depends on how many packages are installed
+
+swap	Swap is virtual memory that is not mounted on a directory. This virtual memory is used when the actual memory of the system is low. On systems with large amounts of memory, swap is less important.	Up to 2 times the physical memory of the system
+/usr	The /usr directory contains the bulk of the operating system's files, including most of the commands and system software.	2GiB-10GiB+
+/usr/local	This directory is used for locally installed software that should not be upgraded or updated with the operating system.	
+100MiB+
+
+Size depends on local needs
+
+/var	There are many directories that may have heavy activity under /var for services like mail, ftp, http, and printing.	
+100MiB+
+
+Depending on the volume of activity
+
+/boot/efi	The /boot/efi directory contains the Linux kernel and the boot loader files. It is typically set up automatically by the installer.	100MB-250MB
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
