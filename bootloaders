@@ -1,0 +1,309 @@
+17.1 Introduction
+The boot process for a computer goes through several distinct steps, starting from no power being applied and completing with a fully-running operating system. The bootloader is a critical part of the system startup process, essentially taking the computer from its reading of firmware for a boot device, to the point at which control is transferred to the system initialization scheme for the operating system that is chosen to run the computer.
+
+The two bootloaders most commonly used with Linux are the Grand Unified Bootloader (GRUB), or the Grand Unified Bootloader 2 (GRUB 2), though the latter is the one that is used most often. Previously, the Linux Loader (LILO) was the one most implemented, but it has fallen out of wide usage and is present mostly on older or legacy systems.
+
+Consider This
+
+LILO was the first major bootloader to be used for running Linux on Intel PCs. Though a simple program, LILO is still capable of multi-booting between different operating systems. The way LILO works is that rather than analyzing the filesystems that may contain the kernel image, LILO stores this information when it installs itself. As such, LILO doesn’t need to know about the underlying filesystem. However, as configuration changes are made, LILO needs to be manually updated with the new information.
+
+GRUB is a GNU project with the goal of making a bootloader that can boot many different kernels on a variety of systems. GRUB can read filesystems and dynamically learn about the hardware. An administrator can boot into GRUB, query the disks, then discover and boot a kernel image. Also, rather than replacing the bootloader installation on disk each time a configuration change is made, the bootloader automatically reads configuration files.
+
+As a dynamic bootloader, GRUB also offers a command line interface that can override the settings from the configuration file. The most typical use of this is to boot into a rescue mode by passing extra kernel parameters or to specify limitations such as those used for memory troubleshooting.
+
+When a distribution is installed, a bootloader is usually installed automatically, reflecting the hardware particulars for the system. In most cases, the default bootloader will be either GRUB Legacy (version 0-0.9) or GRUB 2. Typical customizations at the point of install are to add extra operating systems for multi-booting, changes to go along with kernel upgrades, and booting into maintenance mode.
+
+Consider This
+
+A major difference between GRUB/GRUB2 and LILO is that the LILO bootloader needs to be updated after changes are made to configuration files.
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+17.3 GRUB Legacy Boot Steps
+All bootloaders work in stages, as the location for the initial bootloader code is very small, under 512 KB, and GRUB Legacy gets around this by utilizing 2.5 stages to load the entire bootloader and reach the main system’s bootloader.
+
+GRUB Legacy typically writes the stage 1 bootloader to the Master Boot Record (MBR), and that is just enough code to get the stage 1.5 bootloader, which usually occupies the first 30KiB of the disk that directly follows the MBR. The stage 1.5 loader has just enough code to load up the filesystem drivers needed to load the stage 2 loader from the /boot/grub location.
+
+The GRUB Legacy bootloading stages will then turn over the rest of the system initialization to the /sbin/init or systemd equivalent for the continuation of the system boot.
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+17.4 GRUB Legacy Configuration
+Within the GRUB Legacy configuration file, disks are referred to with a special syntax that does not differ based upon the type of disk. This is different from how the Linux operating system refers to IDE disks.
+
+In GRUB Legacy, the first disk detected is referred to as hd0, the second disk as hd1 and so on. Partitions on disks are also numbered starting at zero. Therefore, use hd0,0 to refer to the first partition on the first disk, hd1,0 for the first partition on the second disk, etc.
+
+Note
+
+Device files are used by the operating system to refer to hard drives and partitions. The naming convention is different than GRUB Legacy's naming convention, which may lead to frustration.
+
+For example, the first SATA device would have a device file name of /dev/sda. The first partition on this device would be named /dev/sda1. The first IDE device would have a device file name of /dev/hda. So, the first partition on this device would be named /dev/hda1.
+
+Not only does GRUB Legacy not distinguish between SATA and IDE drives, it also doesn't number drives with letters like the operating system does. For example, the first hard drive is 0, not a.
+
+Additionally, the partition numbers are different. The operating system numbers the first partition of a drive 1, while for GRUB Legacy it would be partition 0.
+
+For example, the device /dev/sda1 might be referred to as hd0,0 in GRUB Legacy. The device /dev/hdb3 might be hd1,2 in GRUB Legacy. The term "might be" is used because the drive number really depends on the order in which GRUB Legacy "finds" the drives.
+
+Disks and partitions are covered in greater detail in a later chapter.
+
+The GRUB Legacy bootloader is typically installed as part of the installation process. In the event that the GRUB Legacy bootloader needs to be reinstalled, then GRUB Legacy can be reinstalled by running the following command:
+
+Note
+
+The following examples may not match the output in our virtual environment.
+
+sysadmin@localhost:~$  grub-install '(hd0)'
+The grub-install command shown above will install the GRUB Legacy bootloader to the first disk device in the system. The grub-install command exists primarily to gather information about the system, its disks, filesystems, and the location of the /boot/grub directory on disk, and then install the GRUB Legacy bootloader’s image (with the necessary location information) files to the proper location(s) on the system’s disks/partitions.
+
+Note
+
+GRUB Legacy can have either or both of the following two main configuration files: the /boot/grub/menu.lst and /boot/grub/grub.conf files. Depending on the distribution, one file is preferred over the other. Examples include Red Hat distributions focusing on the grub.conf file, and SUSE distributions preferring to use the menu.lst file. Many distributions simply have one of these files existing as a symbolic link to the other.
+
+GRUB Legacy began life using the menu.lst file, with grub.conf appearing later in its history. For the sake of clarity and reducing confusion, this section will focus on the newer and more common file location, /boot/grub/grub.conf.
+
+Because the default is to have a working version of the GRUB configuration file, /etc/grub.conf, generated and installed by the installation routines, a user may not have to generate a new configuration by hand. However, it is useful to know what the grub-mkconfig command can do for you in case your configuration is damaged or somehow gets corrupted on disk.
+
+The grub-mkconfig command will query the running system for the contents of the /boot directory, the contents of the /etc/default/grub location if it exists, and any scripts that are located in the /etc/grub.d directory.
+
+Next, it will output the properly-formatted configuration file to the specified location. For example, to generate the /boot/grub/grub.cfg file, you would use the following command:
+
+sysadmin@localhost:~$ grub-mkconfig -o /boot/grub/grub.cfg
+In the example above, the -o option specifies the output location, which is the /boot/grub/grub.cfg file. That file will contain the gathered information formatted accordingly and should be what the system needs to boot the currently installed system properly.
+
+While the location of grub.conf is the /boot/grub/grub.conf file, on some systems a symbolic link named /etc/grub.conf makes it easier for the administrator to find:
+
+sysadmin@localhost:~$ ls -l /etc/grub.conf
+lrwxrwxrwx 1 root root 22 Jun 18  2012 /etc/grub.conf -> ../boot/grub/grub.conf
+Keep in mind that only the root user can modify the /boot/grub/grub.conf file. A typical /boot/grub/grub.conf file would look something like the following:
+
+#global options
+default=0
+fallback=1
+timeout=5
+splashimage=(hd0,0)/grub/splash.xpm.gz
+hiddenmenu
+password notencypted
+
+#bootable title sections
+title CentOS (2.6.32-358.6.1.el6.i686)
+	root (hd0,2)
+	kernel /vmlinuz-2.6.32-358.6.1.el6.i686 ro root=/dev/mapper/vg_livecd-lv_root rd_NO_LUKS LANG=en_US.UTF-8 rd_LVM_LV=vg_livecd/lv_swap rd_NO_MD rd_LVM_LV=vg_livecd/lv_root SYSFONT=latarcyrheb-sun16 crashkernel=auto  KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM rhgb quiet
+	initrd /initramfs-2.6.32-358.6.1.el6.i686.img
+title CentOS (2.6.32-358.2.1.el6.i686)
+	password --md5 $1$D20Ia1$iN6djlheGF0NQoyerYgpp/
+	root (hd0,2)
+	kernel /vmlinuz-2.6.32-358.2.1.el6.i686 ro root=/dev/mapper/vg_livecd-lv_root rd_NO_LUKS LANG=en_US.UTF-8 rd_LVM_LV=vg_livecd/lv_swap rd_NO_MD rd_LVM_LV=vg_livecd/lv_root SYSFONT=latarcyrheb-sun16 crashkernel=auto  KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM rhgb quiet
+	initrd /initramfs-2.6.32-358.2.1.el6.i686.img
+title OtherOS (Windows)
+	rootnoverify (hd0,0)
+	chainloader +1
+Comments can be added to the grub.conf file by beginning the lines with a hash # character.
+
+Global options appear first, followed by title blocks, which contain at least three directives: root, kernel, and initrd. These title blocks define an operating system to boot, as well as options to the kernel that indicate how to boot the operating system.
+
+Like hard drives, GRUB Legacy numbers each bootable title starting with the number zero. Directives such as default and fallback are set to equal these values indicating the title to boot. For instance, default=1 will boot the second title.
+
+Directive	Meaning
+default=	Specifies the title to attempt to boot by default after the timeout number of seconds has passed.
+fallback=	Specifies the title to attempt to boot if the default title fails to boot successfully.
+timeout=	Specifies the number of seconds to wait before automatically attempting to boot the default title.
+splashimage=	Specify a background graphic that appears behind the text of the menu.
+hiddenmenu	Prevents GRUB Legacy from displaying all but the default bootable title until the user presses a key. If the user presses a key, then all titles are displayed.
+title	The title directive starts a new block of directives that form the directives necessary to boot the system. A title block ends when the next title directive appears or when the end of the file is reached.
+root	Uses the special hard disk syntax to refer to the location of the /boot directory.
+kernel	This line specifies the kernel image file, followed by all the parameters that are passed to the kernel, such as ro for read-only and root=/path/to/rootfs.
+initrd	This line should specify an initial ramdisk that matches the version and release of the Linux kernel. This file provides a minimal filesystem during kernel initialization prior to mounting the root filesystem.
+password	This option can be used as either a global option or a title option. When specified globally, this requires the user to submit the specified password before appending, editing, or using the GRUB Legacy command line. As a title option, this requires the user to submit the password before GRUB will attempt to boot the title.
+rootnoverify	This directive is used to specify a bootable partition for a non-Linux operating system.
+chainloader	Used to specify a path to another bootloader or +1 if the bootloader is located in the first sector of the partition specified by the rootnoverify directive.
+The password that is specified can be specified as clear text, like in the example /boot/grub/grub.conf file shown earlier in this section:
+
+password notencrypted
+For an encrypted the password, use the --md5 option for the password directive:
+
+password --md5 $1$D20Ia1$iN6djlheGF0NQoyerYgpp/. 
+To generate the encrypted password, use the grub-md5-crypt command or execute the grub command and then at the grub prompt, type the md5crypt command:
+
+sysadmin@localhost:~$ grub-md5-crypt
+Password:
+Retype password:
+$1$eRsrb1$v1p5us79Harrku4vbJgKF0
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+17.5 Interacting with GRUB Legacy
+When a system first starts up with GRUB Legacy installed as the bootloader, it may only display the default title and the timeout time counting down to zero as the hiddenmenu directive may be specified in the /boot/grub/grub.conf file. If the hiddenmenu directive is not specified, then GRUB Legacy will display all the titles and the timeout time counting down to zero. If no interaction occurs before the countdown reaches zero, then GRUB Legacy will attempt to boot the default title.
+
+‌⁠​​⁠​ If any key except Enter is pressed, then the time stops counting down, and a title must be selected manually to attempt a boot. The Up ↑ and Down ↓ arrow keys can be used to select one of the available titles. After selecting a title, the user can press Enter to attempt to boot the selection.
+
+If the global password directive has been used, then the P key must be pressed, followed by the password to unlock the ability to use GRUB Legacy 's append, edit, and the GRUB command prompt features. Notice the message at the bottom of the following graphic:
+
+GNU GRUB window with message at the bottom: Use the up and down keys to select which entry is highlighted. Press enter to boot the selected OS or 'p' to enter a password to unlock the next set of features.
+If a title password is in use, then GRUB Legacy will prompt for this password when a title is selected from the GRUB Legacy menu.
+
+If the global password directive has not been used or GRUB Legacy has been unlocked by providing the password, then the screen should look similar to the following graphic:
+
+GNU GRUB window with message at the bottom: Use the up and down keys to select which entry is highlighted. Press enter to boot the selected OS, 'e' to edit the commands before booting, 'a' to modify the kernel arguments before booting or 'e' for a command-line.
+Notice the following options available at the bottom of the previous graphic:
+
+If the A key is pressed, then GRUB Legacy will allow additional kernel parameters to be appended. This is commonly used to specify the runlevel number to take the system to, instead of the default runlevel.
+
+If the E key is pressed, then any of the directives that are included within the selected title can be edited; the root, kernel, or initrd values can be changed in order to be able to boot the system in a different manner. The changes that are made at the GRUB Legacy menu are not permanently edited into the /boot/grub/grub.conf file.
+
+If the C key is pressed at the GRUB Legacy menu, then the GRUB command prompt will be provided. At this command prompt, any GRUB Legacy directives can be added, including specifying custom root, kernel, and initrd directives. If entered correctly, followed by the boot directive, then the system will boot correctly.
+
+One of the most common tasks performed interactively with GRUB Legacy is to boot to a different runlevel. A runlevel is a status that defines how many services are currently running on a system. There are multiple runlevels, and they are based on what services will be active when the system is booted. or this next example, we will introduce the single user runlevel. The single user runlevel is when a system has limited services running and is used only to perform administrative tasks.
+
+Note
+
+Runlevels will be covered in greater detail in a later chapter.
+
+In the event that there is a serious system problem, the single user runlevel can be very useful. In this runlevel, only the root user has access to the system, and most system daemons are not running.
+
+Additionally, when the system boots to the single user runlevel, the root password is not required to log in because the system automatically logs in as the root user. This makes the single user runlevel useful for things like recovering or replacing a forgotten root password.
+
+To go to the single user runlevel, use the Up and Down arrow key to select the correct title from the GRUB Legacy menu. Then, use the A key to add to the kernel line. The screen should now look something like this:
+
+[ Minimal BASH-like line editing is supported. For the first word, TAB 
+  lists possible command completions. Anywhere else TAB lists the possible
+  completions of a device/filename. ESC at any time cancels. ENTER
+  at any time accepts your changes.]
+
+<c KEYTABLE=us rd_NO_DM rhgb quiet_
+The kernel line is quite long, so initially only the very end of the line can be seen. The Left ← and Right → arrow keys can be used to move the cursor. Use the Left arrow key to see the rest of the line, then add the single parameter to the end:
+
+[ Minimal BASH-like line editing is supported. For the first word, TAB
+  lists possible command completions. Anywhere else TAB lists the possible
+  completions of a device/filename. ESC at any time cancels. ENTER
+  at any time accepts your changes.]
+
+<c KEYTABLE=us rd_NO_DM rhgb quiet single_
+After single has been typed, press the Enter key. The system will boot, and the console will appear with the system in the single user runlevel.
+
+When finished working at the single user runlevel, Ctrl+D can be used to boot
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+17.6 GRUB 2
+The new GRUB, GRand Unified Bootloader 2, offers several advantages:
+
+Dynamically loaded modules
+Non-ASCII character support
+Ability to boot from partitions inside of Logical Volume Management (LVM) or RAID devices
+Ability to work with architectures that don't have a PC BIOS
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+17.7 GRUB 2 Boot Steps
+When a GRUB 2 system is powered on, the first stage loader boot.img is either read from the first 440 bytes of the Master Boot Record (MBR), or alternatively read from the Partition Boot Record (PBR), (like a Master Boot Record for a partition).
+
+From the first stage loader, the location of the second stage loader is found. The second stage loader diskboot.img is used as the first sector of the third stage loader, and this points directly to the third stage.
+
+The third stage loader core.img uncompresses itself, accesses its own GRUB 2 kernel and filesystem drivers and attempts to access the actual root filesystem’s /boot/grub directory.
+
+If it can access the /boot/grub directory on disk, it then loads the appropriate fourth stage module normal.mod which then reads the /boot/grub/grub.cfg file and presents either a GUI for GRUB 2 or the CLI menu so the user can choose an image to boot.
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+17.8 GRUB 2 Configuration
+Although both the Fedora and Ubuntu distributions are now using GRUB 2, they each use a different location for the main configuration file. Fedora uses the /boot/grub2/grub.cfg file instead of the /boot/grub/grub.cfg file that is used by Ubuntu-based distributions.
+
+While it is possible to edit the main configuration file, any changes made to it will be lost upon updating the kernel or if an administrator executes the update-grub command (for Ubuntu-based systems) or the grub2-mkconfig command (for Fedora-based systems). This is because the GRUB 2 configuration file is designed to be automatically regenerated any time a kernel file is added or removed from the /boot directory.
+
+While GRUB Legacy expects the main configuration file will be edited, GRUB 2 expects any customizations to occur in the /etc/grub.d directory or the /etc/default/grub file.
+
+With GRUB Legacy, the files for GRUB were kept in the /boot/grub directory. Now, GRUB 2 uses several locations for its files:
+
+File Location	Details
+/boot/grub2	
+Contains many module files.
+
+Contains the grub.cfg file, a configuration file which should not be edited manually.
+
+Contains the grubenv file, a configuration file which should not be edited manually
+
+/etc/default/grub	
+Contains the entries for creating a default boot entry; typically where customization by administrators will be performed.
+/etc/grub.d	
+Contains scripts that are run by GRUB 2.
+
+Scripts can be customized or added to this directory.
+
+Contains the following executable scripts by default:
+
+/etc/grub.d/00_header
+
+/etc/grub.d/10_linux
+
+/etc/grub.d/20_linux_xen
+
+/etc/grub.d/30_os-prober
+
+/etc/grub.d/40_custom
+
+/etc/grub.d/41_custom
+
+/etc/grub.d/90_persistent
+
+/usr/lib/grub	
+Stores a couple of library files.
+/sbin/grub2-mkconfig	
+Command used to regenerate the /boot/grub2/grub.cfg file.
+This following demonstrates a typical /etc/default/grub file (this one was copied from a Fedora 16 system):
+
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
+GRUB_DEFAULT=saved
+GRUB_SAVEDEFAULT=true
+# GRUB_TERMINAL="serial console"
+# GRUB_SERIAL_COMMAND="serial --unit=0 --speed=9600"
+GRUB_CMDLINE_LINUX="quiet rhgb"
+GRUB_DISABLE_RECOVERY="true"
+The new GRUB 2 allows the user to choose a new default menu item. By adding the following settings in the /etc/default/grub file and regenerating the configuration file, whatever title the user chooses from the menu becomes “saved” and will be the default the next time the menu is displayed:
+
+GRUB_DEFAULT=saved
+GRUB_SAVEDEFAULT=true
+After modifying the /etc/default/grub file, execute either the update-grub command (for Ubuntu-based systems) or the grub2-mkconfig command (for Fedora-based systems) to update the actual configuration file used by GRUB 2 at boot time.
+
+To manually specify which kernel image to boot, use these settings in the /etc/default/grub file:
+
+GRUB_DEFAULT=0
+GRUB_SAVEDEFAULT=false
+‌⁠​​These settings mean use the first menu entry found in the configuration file as the default to boot. The menu entries are created by GRUB 2 by searching for kernel images in the /boot directory. These menu entries are numbered starting at zero for the most recent version, one for the next most recent version, and so forth.
+
+The GRUB_DEFAULT= setting establishes the number of the menu entry to use by default, and GRUB_SAVEDEFAULT=false means don’t save a new default when the user chooses from the menu.
+
+The /etc/default/grub file can also be modified for the administrator automatically by executing the grub-set-default command with the menu entry to set as default. For example, to make the second menu entry the default menu entry, an administrator would execute:
+
+root@localhost:~# grub-set-default 1
+The GRUB_TIMEOUT value found in the /etc/default/grub file establishes how many seconds to wait before the system is automatically booted to the default menu entry. If the user presses any key except the Enter key, then the timeout is aborted, and the user can select a menu entry manually.
+
+If GRUB 2 needs to be installed or reinstalled, then an administrator would execute:
+
+root@localhost:~# /sbin/grub2-install /dev/sda
+After installing GRUB 2, the configuration file needs to be generated for the first time. In a Fedora-based distribution, an administrator would execute:
+
+[root@localhost]# grub2-mkconfig -o /boot/grub2/grub.cfg
+On an Ubuntu-based distribution, an administrator would execute:
+
+root@localhost:~# update-grub
+Consider This
+
+Additional documentation of GRUB 2 configuration can be found at gnu.org, the GNU website.
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
