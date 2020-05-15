@@ -1,0 +1,141 @@
+20.1 Introduction
+The creation of partitions can be accomplished either during the installation process or at any time after the installation is complete. Typically, users find that creating the partitions during the installation is easier because most installation programs provide a GUI-based program, while the technique to create partitions after the installation is typically a CLI-based program.
+
+Additionally, the installation program will automatically create a filesystem for the new partition as well as configure it to be mounted automatically during the boot process. When creating a partition after the installation, these steps must be manually executed by the administrator.
+
+However, there are some cases in which the system administrator may want to create partitions post-install. For example, the system administrator may not have access to all resources during the installation. This could happen when a second hard drive is added to the system at a later date.
+
+The installation program, while easier, also doesn't provide as much flexibility in how the partition or filesystem is created. The CLI-based commands that can be used post-install are much more powerful and flexible, providing another benefit to waiting until after the installation to create any additional partitions.
+
+It is important to note that some partitions need to be created during the installation process to provide a location to install the operating system files. As a result, post-install partitions are typically created for non-system critical features, such as a place to store additional software or to store a large database.
+
+##########################################################################################################################################
+##########################################################################################################################################
+20.2 Creating Partitions During Installation
+The installation process can vary quite a bit from one distribution to another. In the examples provided, the screen captures are from the CentOS 6.5 installer program named Anaconda.
+
+One step of the installation process essentially asks: How much of the hard drive space should be used to install the operating system?
+
+Select installation type window. Options include; Use All Space, Replace Existing Linux System(s), Shrink Current System, Use Free Space, Create Custom Layout (this option is selected).
+When choosing one of these options, the following should be taken into consideration:
+
+Use All Space: Use this option when there is no need to save any data from the existing hard drive. This option will remove all traces of any previous hard drive data, including previous installations of other operating systems.
+
+Replace Existing Linux Systems: Use this option when the system is a dual boot system, typically a system with both a Linux operating system and a Microsoft Windows operating system. Realize that all Linux operating systems will be replaced by this new installation. However, the Microsoft Windows operating system should not be impacted.
+
+Shrink Current System: This option would be used to recover hard drive space from an existing Linux operating system. The recovered space could then be used to install a second Linux operating system for a dual boot system. This is an advanced installation method, and all data from the existing Linux operating system should be backed up prior to using this method.
+
+Use Free Space: This option assumes that a previous operating system (Microsoft Windows or Linux) has already been installed and there is still unpartitioned space available on the hard drive. This is usually the case when creating a dual boot system as Microsoft Windows should be installed first without using all of the hard drive space. The remaining space is used by the Linux Installer to install the Linux operating system.
+
+Create Custom Layout: This option is used for advanced installations. The administrator is provided with the opportunity to remove existing partitions and create new partitions to meet the needs of the customized installation.
+If the Create Custom Layout option is chosen, the distribution installer will provide a graphical tool for creating partitions, such as the following:
+
+Add Partition window. Mount Point is /, File System Type is ext 4, Allowable Drives is sad, Size (MB) is 1000, Additional Size Options is Fill all space up to 1200 MB.
+Components of this graphic:
+
+Mount Point: The directory where the filesystem for this partition will be mounted.
+
+File System Type: The type of filesystem to place on this partition. The exact types that will be available during the installation will depend on what specific Linux operating system is being installed.
+
+Allowable Drives: This area provides a list of available hard drives. If only one hard drive is present, then it is greyed out. If multiple hard drives are present, then the individual who is performing the installation can choose which hard drive to place this partition on.
+
+Size (MB): The size in megabytes of the partition. Note that this relates to the next field.
+
+Additional Size Options:
+
+Fixed Size: The partition will be the size specified by the Size (MB) field.
+
+Fill all space up to (MB): The partition will be at least the size specified by the Size MB field but can be as large as this field. For example, if the Size (MB) field is 500, and the Fill all space up to (MB) field is 800, then partition size will be between 500MB and 800MB. This is useful when the individual that is performing the installation creates partitions, and there is extra space left over. The installer will automatically take this extra space and assign it to partitions that make use of this field.
+
+Fill to maximum allowable size: The partition will be at least the size specified by the Size (MB) field. Any additional unpartitioned space will be given to this partition. If multiple partitions have this option, the unpartitioned space is divided equally between these partitions.
+
+To better understand the Additional Size Options fields, consider the following scenarios:
+
+Scenario #1
+Hard Drive: 2400 MB
+
+Mount Point	Size	Additional Size
+Partition 1	/	1000 MB	Fixed Size
+Partition 2	/var	500 MB	Fixed Size
+Partition 3	/home	200 MB	Fixed Size
+Three Add Partition windows side-by-side. In the first window (left to right); / is 1000MB, in the second window /var is 500 MB and in the third window /home is 200 MB.
+Result:
+/ is 1000MB
+/var is 500MB
+/home is 200MB
+700MB of space is unused
+Scenario #2
+Hard Drive: 2400 MB
+
+Mount Point	Size	Additional Size
+Partition 1	/	1000 MB	Fill all space up to 1200 MB
+Partition 2	/var	500 MB	Fixed Size
+Partition 3	/home	200 MB	Fixed Size
+Three Add Partition windows side-by-side. In the first window (left to right); / is 1200MB, in the second window /var is 500 MB and in the third window /home is 200 MB.
+Result:
+
+/ is 1200MB
+/var is 500MB
+/home is 200MB
+500MB of space is unused
+Scenario #3
+Hard Drive: 2400 MB
+
+Mount Point	Size	Additional Size
+Partition 1	/	1000 MB	Fill all space up to 1200 MB
+Partition 2	/var	500 MB	Fill to maximum allowable size
+Partition 3	/home	200 MB	Fill to maximum allowable size
+Three Add Partition windows side-by-side. In the first window (left to right); / is 1200MB, in the second window /var is 750 MB and in the third window /home is 450 MB.
+Result:
+
+/ is 1200MB
+/var is 750MB
+/home is 450MB
+Consider This
+
+To boot to both Windows and Linux, the system administrator should install Windows first and then Linux. This is necessary because the bootloader (the program that boots the system) for Windows can't boot Linux, but the bootloader for Linux can boot Windows.
+
+Consumer-based systems that are purchased in a store will already have Windows installed, but it will be using the entire disk. In the Windows Control Panel, Administrative Tools folder, find the Computer Management tool, which can be used to manage partitions within the Windows operating system. If Windows is using the entire disk, use this tool to shrink the partition that Windows is using, to make space for a Linux installation.
+
+Many Linux distributions will also query the user during installation on an existing Windows disk scheme and allow for the shrinking of the Windows partition to leave room for Linux partitions.
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
+
+
+##########################################################################################################################################
+##########################################################################################################################################
+
